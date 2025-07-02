@@ -1,0 +1,163 @@
+package com.example.finance_tracker.features.settings.state
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.finance_tracker.core.data.local.preferences.TokenManager
+import com.example.finance_tracker.core.network.NetworkResult
+import com.example.finance_tracker.core.network.model.settings.UpdateSettingDTO
+import com.example.finance_tracker.core.network.model.sync.SyncRequestDTO
+import com.example.finance_tracker.features.settings.domain.SettingsRepo
+import com.example.finance_tracker.features.settings.domain.SyncRepo
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import java.time.LocalDateTime
+import javax.inject.Inject
+
+@HiltViewModel
+class SettingsViewModel @Inject constructor(
+    private val settingsRepo: SettingsRepo,
+    private val syncRepo: SyncRepo,
+    private val tokenManager: TokenManager
+) : ViewModel() {
+
+    private val _state = MutableStateFlow(SettingsState())
+    val state: StateFlow<SettingsState> = _state
+
+    var onLogoutOrDelete: (() -> Unit)? = null
+
+    fun onEvent(event: SettingsEvent) {
+        when (event) {
+            is SettingsEvent.LoadSettings -> loadSettings()
+            is SettingsEvent.UpdateSettings -> updateSettings(event.settings)
+            is SettingsEvent.ResetToDefaults -> resetDefaults()
+            is SettingsEvent.Logout -> logout()
+            is SettingsEvent.DeleteAccount -> deleteAccount()
+            is SettingsEvent.ExportData -> exportData()
+            is SettingsEvent.ImportData -> importData(event.file, event.filename)
+            is SettingsEvent.PerformSync -> performSync(event.lastSync, event.manual)
+            is SettingsEvent.ClearError -> _state.update { it.copy(errorMessage = null) }
+        }
+    }
+
+    private fun loadSettings() {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true) }
+            when (val result = settingsRepo.getSettings()) {
+                is NetworkResult.Success -> _state.update { it.copy(settings = result.data, isLoading = false) }
+                is NetworkResult.Error -> _state.update { it.copy(errorMessage = result.message, isLoading = false) }
+                else -> Unit
+            }
+        }
+    }
+
+    private fun updateSettings(settings: List<UpdateSettingDTO>) {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true) }
+            when (val result = settingsRepo.updateSettings(settings)) {
+                is NetworkResult.Success -> loadSettings()
+                is NetworkResult.Error -> _state.update { it.copy(errorMessage = result.message, isLoading = false) }
+                else -> Unit
+            }
+        }
+    }
+
+    private fun resetDefaults() {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true) }
+            when (val result = settingsRepo.resetToDefaults()) {
+                is NetworkResult.Success -> loadSettings()
+                is NetworkResult.Error -> _state.update { it.copy(errorMessage = result.message, isLoading = false) }
+                else -> Unit
+            }
+        }
+    }
+
+    private fun logout() {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true) }
+            when (val result = settingsRepo.logout()) {
+                is NetworkResult.Success -> {
+                    tokenManager.clearTokens()
+                    _state.update { it.copy(isLoading = false) }
+                    onLogoutOrDelete?.invoke()
+                }
+                is NetworkResult.Error -> {
+                    _state.update { it.copy(errorMessage = result.message, isLoading = false) }
+                }
+                else -> Unit
+            }
+        }
+    }
+
+    private fun deleteAccount() {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true) }
+            when (val result = settingsRepo.deleteAccount()) {
+                is NetworkResult.Success -> {
+                    tokenManager.clearTokens()
+                    _state.update { it.copy(isLoading = false) }
+                    onLogoutOrDelete?.invoke()
+                }
+                is NetworkResult.Error -> {
+                    _state.update { it.copy(errorMessage = result.message, isLoading = false) }
+                }
+                else -> Unit
+            }
+        }
+    }
+
+    private fun exportData() {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true) }
+            when (val result = settingsRepo.exportData()) {
+                is NetworkResult.Success -> _state.update { it.copy(isLoading = false) }
+                is NetworkResult.Error -> _state.update { it.copy(errorMessage = result.message, isLoading = false) }
+                else -> Unit
+            }
+        }
+    }
+
+    private fun importData(file: ByteArray, filename: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true) }
+            when (val result = settingsRepo.importData(file, filename)) {
+                is NetworkResult.Success -> loadSettings()
+                is NetworkResult.Error -> _state.update { it.copy(errorMessage = result.message, isLoading = false) }
+                else -> Unit
+            }
+        }
+    }
+
+    private fun performSync(lastSync: LocalDateTime, manual: Boolean) {
+        viewModelScope.launch {
+            _state.update { it.copy(isSyncing = true) }
+
+            val request = SyncRequestDTO(lastSync = lastSync, manualSync = manual)
+            val result = syncRepo.syncData(request)
+
+            when (result) {
+                is NetworkResult.Success -> {
+                    _state.update {
+                        it.copy(
+                            lastSync = LocalDateTime.now(),
+                            isSyncing = false
+                        )
+                    }
+                    loadSettings()
+                }
+                is NetworkResult.Error -> {
+                    _state.update {
+                        it.copy(
+                            errorMessage = result.message,
+                            isSyncing = false
+                        )
+                    }
+                }
+                else -> Unit
+            }
+        }
+    }
+}

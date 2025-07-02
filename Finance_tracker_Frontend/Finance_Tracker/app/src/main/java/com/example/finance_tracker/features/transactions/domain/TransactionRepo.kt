@@ -1,0 +1,33 @@
+package com.example.finance_tracker.features.transactions.domain
+
+import com.example.finance_tracker.core.network.NetworkResult
+import com.example.finance_tracker.core.network.model.sync.TransactionDTO
+import com.example.finance_tracker.core.network.model.transaction.*
+
+interface TransactionRepo {
+    suspend fun createTransaction(dto: TransactionCreateDTO): NetworkResult<TransactionResponseDTO>
+    suspend fun getTransactionById(id: Long): NetworkResult<TransactionResponseDTO>
+    suspend fun getAllTransactionsForUser(): NetworkResult<List<TransactionResponseDTO>>
+    suspend fun getFilteredTransactions(
+        category: String? = null,
+        type: TransactionType? = null,
+        startDate: String? = null,
+        endDate: String? = null,
+        minAmount: Double? = null,
+        maxAmount: Double? = null
+    ): NetworkResult<List<TransactionResponseDTO>>
+
+    suspend fun updateTransaction(id: Long, dto: TransactionUpdateDTO): NetworkResult<TransactionResponseDTO>
+    suspend fun deleteTransaction(id: Long): NetworkResult<Unit>
+    suspend fun getLocalTransactions(): List<TransactionDTO>
+    suspend fun getFilteredTransactionsPaginated(
+        filter: TransactionFilterDTO,
+        page: Int = 0,
+        size: Int = 10,
+        sort: List<String> = listOf("transactionDate,desc")
+    ): NetworkResult<PaginatedTransactionResponse>
+
+    suspend fun exportFilteredTransactionsToPDF(
+        filter: TransactionFilterDTO
+    ): NetworkResult<ByteArray>
+}

@@ -1,0 +1,71 @@
+# === General ===
+*.log
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+
+# === Git ===
+.git/
+
+# === Gradle ===
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+.gradle/
+**/build/
+**/out/
+.gradle-cache/
+
+# === IntelliJ / Android Studio ===
+.idea/
+*.iml
+*.ipr
+*.iws
+.idea/**
+
+# === Android Specific ===
+/*.apk
+*.ap_ 
+*.dex
+*.class
+*.jar
+*.keystore
+*.jks
+*.so
+*.o
+*.d
+*.DS_Store
+*.lock
+/local.properties
+/captures/
+/output.json
+
+# === Kotlin ===
+*.kotlin_module
+
+# === Spring Boot Specific ===
+/target/
+*.war
+*.jar
+
+# === OS / Editor Artifacts ===
+*.~ 
+*.sw?
+*.bak
+*.tmp
+*.orig
+
+# === Environment files ===
+.env
+.env.*
+
+# === Node (if any tools use Node/npm) ===
+node_modules/
+npm-debug.log
+yarn-error.log
+.pnpm-store/
+
+# === Test output ===
+/test-output/
+/test-results/

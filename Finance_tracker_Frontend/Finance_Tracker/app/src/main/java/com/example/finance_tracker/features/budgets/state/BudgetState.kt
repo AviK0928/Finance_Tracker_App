@@ -1,0 +1,27 @@
+package com.example.finance_tracker.features.budgets.state
+
+import com.example.finance_tracker.core.network.model.budget.BudgetFrequency
+import com.example.finance_tracker.core.network.model.budget.BudgetResponseDTO
+import com.example.finance_tracker.core.network.model.budget.BudgetStatus
+
+data class BudgetState(
+    val budgets: List<BudgetResponseDTO> = emptyList(),
+    val selectedBudget: BudgetResponseDTO? = null,
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null,
+    val isFormVisible: Boolean = false,
+
+    // Form fields
+    val formTitle: String = "",
+    val formAmount: String = "",
+    val formCategory: String = "",
+    val formStartDate: String = "",
+    val formEndDate: String = "",
+    val categories: List<String> = emptyList(),
+    val formFrequency: BudgetFrequency = BudgetFrequency.MONTHLY,
+    val formStatus: BudgetStatus = BudgetStatus.ACTIVE,
+
+    val isEditing: Boolean = false,
+    val filterStatus: BudgetStatus? = null,
+    val filterFrequency: BudgetFrequency? = null
+)

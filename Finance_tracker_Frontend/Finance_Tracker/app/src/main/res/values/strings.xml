@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Finance_Tracker</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_transactions">Transactions</string>
+    <string name="nav_budgets">Budgets</string>
+    <string name="nav_reports">Reports</string>
+    <string name="nav_settings">Settings</string>
+</resources>

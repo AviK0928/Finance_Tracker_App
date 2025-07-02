@@ -1,0 +1,33 @@
+package com.example.finance_tracker.features.transactions.state
+
+import com.example.finance_tracker.core.network.model.transaction.PaginatedTransactionResponse
+import com.example.finance_tracker.core.network.model.transaction.TransactionFilterDTO
+import com.example.finance_tracker.core.network.model.transaction.TransactionResponseDTO
+import com.example.finance_tracker.core.network.model.transaction.TransactionType
+
+data class TransactionState(
+    val transactions: List<TransactionResponseDTO> = emptyList(),
+    val selectedTransaction: TransactionResponseDTO? = null,
+
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null,
+
+    // Pagination
+    val currentPage: Int = 0,
+    val totalPages: Int = 0,
+    val pageSize: Int = 10,
+
+    // Filter
+    val filter: TransactionFilterDTO = TransactionFilterDTO(),
+
+    // Form Fields
+    val formAmount: String = "",
+    val formCategory: String = "",
+    val formType: TransactionType = TransactionType.EXPENSE,
+    val formDate: String = "",
+    val formDescription: String = "",
+    val categories: List<String> = emptyList(),
+
+    val isEditing: Boolean = false,
+    val isFormVisible: Boolean = false
+)
