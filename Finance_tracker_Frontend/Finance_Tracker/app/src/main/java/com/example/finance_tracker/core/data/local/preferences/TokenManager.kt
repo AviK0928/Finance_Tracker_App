@@ -8,8 +8,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import com.example.finance_tracker.core.data.local.preferences.UserPreferencesKeys.ACCESS_TOKEN
 import com.example.finance_tracker.core.data.local.preferences.UserPreferencesKeys.REFRESH_TOKEN
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class TokenManager(private val context: Context) {
+@Singleton
+class TokenManager @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
 
     val authTokens: Flow<AuthTokens?> = context.dataStore.data.map { preferences ->
         val accessToken = preferences[ACCESS_TOKEN]

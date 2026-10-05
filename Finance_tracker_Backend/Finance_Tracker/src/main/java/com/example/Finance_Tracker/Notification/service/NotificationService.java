@@ -73,7 +73,7 @@ public class NotificationService {
             throw new IllegalStateException("User not authenticated");
         }
 
-        List<Notification> unread = notificationRepository.findByUserIdAndIsReadFalse(userId);
+        List<Notification> unread = notificationRepository.findByUserIdAndReadFalse(userId);
         unread.forEach(notification -> notification.setRead(true));
         notificationRepository.saveAll(unread);
     }
@@ -84,7 +84,7 @@ public class NotificationService {
             throw new IllegalStateException("User not authenticated");
         }
 
-        return notificationRepository.countByUserIdAndIsReadFalse(userId);
+        return notificationRepository.countByUserIdAndReadFalse(userId);
     }
 
     public void deleteNotification(Long id) {

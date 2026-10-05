@@ -15,15 +15,13 @@ import javax.inject.Inject
 @HiltViewModel
 class NotificationViewModel @Inject constructor(
     private val repo: NotificationRepo,
-    private val socketManager: NotificationWebSocketManager,
-    private val userId: Long
+    private val socketManager: NotificationWebSocketManager
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(NotificationState())
     val state: StateFlow<NotificationState> = _state
 
     init {
-        socketManager.start(userId)
         observePush()
         loadAll()
     }

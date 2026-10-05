@@ -29,7 +29,7 @@ public class BlacklistedTokenCleanupScheduler {
         logger.info("[Token Cleanup] Starting cleanup at {} for tokens expired before now.", now);
 
         long countBefore = blacklistedTokenRepository.count();
-        blacklistedTokenRepository.deleteByExpiryDateBefore(now);
+        blacklistedTokenRepository.deleteByExpiryBefore(now);
         long countAfter = blacklistedTokenRepository.count();
 
         long deleted = countBefore - countAfter;
