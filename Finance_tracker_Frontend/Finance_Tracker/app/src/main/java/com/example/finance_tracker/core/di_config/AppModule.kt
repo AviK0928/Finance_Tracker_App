@@ -62,8 +62,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideDashboardRepo(
-        dashboardApi: DashboardApi
-    ): DashboardRepo = DashboardRepoImpl(dashboardApi)
+        dashboardApi: DashboardApi,
+        transactionDao: TransactionDao,
+        budgetDao: BudgetDao
+    ): DashboardRepo = DashboardRepoImpl(dashboardApi, transactionDao, budgetDao)
 
     @Provides
     @Singleton

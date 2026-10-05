@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.finance_tracker.core.ui.components.ErrorMessage
 import com.example.finance_tracker.core.ui.components.LoadingIndicator
+import com.example.finance_tracker.core.ui.components.OfflineBanner
 import com.example.finance_tracker.features.budgets.state.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,6 +99,8 @@ fun BudgetScreen(
             )
 
             Spacer(modifier = Modifier.height(12.dp))
+
+            if (state.isOffline) OfflineBanner()
 
             when {
                 state.isLoading -> LoadingIndicator()

@@ -33,6 +33,9 @@ data class TransactionState(
     val formDescription: String = "",
     val categories: List<String> = DefaultCategories.ALL,
 
+    // Showing the last synced copy because the server could not be reached
+    val isOffline: Boolean = false,
+
     val isEditing: Boolean = false,
     val isFormVisible: Boolean = false
 )

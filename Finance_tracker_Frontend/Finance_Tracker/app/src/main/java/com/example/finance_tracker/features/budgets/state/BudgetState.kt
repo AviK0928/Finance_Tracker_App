@@ -26,6 +26,9 @@ data class BudgetState(
     val formFrequency: BudgetFrequency = BudgetFrequency.MONTHLY,
     val formStatus: BudgetStatus = BudgetStatus.ACTIVE,
 
+    // Showing the last synced copy because the server could not be reached
+    val isOffline: Boolean = false,
+
     val isEditing: Boolean = false,
     val filterStatus: BudgetStatus? = null,
     val filterFrequency: BudgetFrequency? = null

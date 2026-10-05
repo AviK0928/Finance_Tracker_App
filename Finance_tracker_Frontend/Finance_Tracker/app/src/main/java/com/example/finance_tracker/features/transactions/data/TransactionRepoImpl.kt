@@ -1,10 +1,12 @@
 package com.example.finance_tracker.features.transactions.data
 
 import com.example.finance_tracker.core.data.local.room.dao.TransactionDao
+import com.example.finance_tracker.core.data.local.room.mapper.TransactionMapper
 import com.example.finance_tracker.core.network.ApiResponseHandler
 import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.core.network.apiendpoints.TransactionApi
 import com.example.finance_tracker.core.network.model.transaction.*
+import com.example.finance_tracker.core.offline.OfflineData
 import com.example.finance_tracker.core.sync.SyncTrigger
 import com.example.finance_tracker.features.transactions.domain.TransactionRepo
 import kotlinx.coroutines.Dispatchers
@@ -51,6 +53,12 @@ class TransactionRepoImpl(
 
     override suspend fun deleteTransaction(id: Long): NetworkResult<Unit> {
         return ApiResponseHandler.handleApi { api.deleteTransaction(id) }.alsoSyncOnSuccess()
+    }
+
+    override suspend fun getLocalTransactions(filter: TransactionFilterDTO): List<TransactionResponseDTO>? {
+        val all = transactionDao.getAll()
+        if (all.isEmpty()) return null
+        return OfflineData.filterTransactions(all.map(TransactionMapper::toDTO), filter)
     }
 
     /** A change made online also refreshes the offline copy (the server is the source of truth). */

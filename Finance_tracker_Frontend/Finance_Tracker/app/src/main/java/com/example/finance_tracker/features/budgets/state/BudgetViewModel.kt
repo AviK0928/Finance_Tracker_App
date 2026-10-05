@@ -85,24 +85,27 @@ class BudgetViewModel @Inject constructor(
 
             when (val result = budgetRepo.getBudgetsByUser()) {
                 is NetworkResult.Success -> {
-                    val filtered = result.data.filter {
-                        (_state.value.filterStatus == null || it.budgetStatus == _state.value.filterStatus) &&
-                                (_state.value.filterFrequency == null || it.budgetFrequency == _state.value.filterFrequency)
-                    }
-
                     _state.update {
-                        it.copy(
-                            budgets = filtered,
-                            isLoading = false
-                        )
+                        it.copy(budgets = withFilters(result.data), isOffline = false, isLoading = false)
                     }
                 }
                 is NetworkResult.Error -> {
-                    _state.update { it.copy(errorMessage = result.message, isLoading = false) }
+                    // Server unreachable: show the last synced copy if there is one
+                    val local = if (result.isNoResponse) budgetRepo.getLocalBudgets() else null
+                    if (local != null) {
+                        _state.update { it.copy(budgets = withFilters(local), isOffline = true, isLoading = false) }
+                    } else {
+                        _state.update { it.copy(errorMessage = result.message, isLoading = false) }
+                    }
                 }
                 NetworkResult.Loading -> _state.update { it.copy(isLoading = true) }
             }
         }
+    }
+
+    private fun withFilters(budgets: List<BudgetResponseDTO>): List<BudgetResponseDTO> = budgets.filter {
+        (_state.value.filterStatus == null || it.budgetStatus == _state.value.filterStatus) &&
+                (_state.value.filterFrequency == null || it.budgetFrequency == _state.value.filterFrequency)
     }
 
     /** Suggestions for the budget category: defaults plus the categories the user has spent in. */

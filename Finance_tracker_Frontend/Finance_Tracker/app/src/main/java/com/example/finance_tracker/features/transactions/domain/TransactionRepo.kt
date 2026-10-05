@@ -19,6 +19,9 @@ interface TransactionRepo {
 
     suspend fun updateTransaction(id: Long, dto: TransactionUpdateDTO): NetworkResult<TransactionResponseDTO>
     suspend fun deleteTransaction(id: Long): NetworkResult<Unit>
+
+    /** Last synced copy filtered like the server does; null when nothing has been synced. */
+    suspend fun getLocalTransactions(filter: TransactionFilterDTO): List<TransactionResponseDTO>?
     suspend fun getFilteredTransactionsPaginated(
         filter: TransactionFilterDTO,
         page: Int = 0,

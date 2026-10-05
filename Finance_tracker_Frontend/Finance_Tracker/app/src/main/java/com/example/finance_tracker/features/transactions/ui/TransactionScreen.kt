@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.finance_tracker.core.ui.components.ErrorMessage
 import com.example.finance_tracker.core.ui.components.LoadingIndicator
+import com.example.finance_tracker.core.ui.components.OfflineBanner
 import com.example.finance_tracker.features.transactions.state.TransactionEvent
 import com.example.finance_tracker.features.transactions.state.TransactionViewModel
 
@@ -57,7 +58,8 @@ fun TransactionsScreen(
                 message = state.errorMessage ?: "Unknown error",
                 onDismiss = { viewModel.onEvent(TransactionEvent.ClearError) }
             )
-            else -> {
+            else -> Column(modifier = Modifier.fillMaxSize()) {
+                if (state.isOffline) OfflineBanner()
                 TransactionList(
                     state = state,
                     onLoadNext = { viewModel.onEvent(TransactionEvent.LoadNextPage) },

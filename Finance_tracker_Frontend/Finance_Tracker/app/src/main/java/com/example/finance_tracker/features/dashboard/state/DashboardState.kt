@@ -21,5 +21,7 @@ data class DashboardState(
 
     // UI State
     val isLoading: Boolean = false,
+    // Showing numbers computed from the last synced copy because the server could not be reached
+    val isOffline: Boolean = false,
     val error: String? = null
 )

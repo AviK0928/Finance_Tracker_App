@@ -13,4 +13,7 @@ interface BudgetRepo {
         status: BudgetStatus? = null,
         frequency: BudgetFrequency? = null
     ): NetworkResult<ByteArray>
+
+    /** Last synced copy; null when nothing has been synced. */
+    suspend fun getLocalBudgets(): List<BudgetResponseDTO>?
 }

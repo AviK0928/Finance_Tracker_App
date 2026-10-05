@@ -33,27 +33,35 @@ class DashboardViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true) }
 
             when (val result = dashboardRepo.getDashboardData()) {
-                is NetworkResult.Success -> {
-                    val data: DashboardResponseDTO = result.data
-                    _state.update {
-                        it.copy(
-                            totalIncome = data.summary.totalIncome,
-                            totalExpense = data.summary.totalExpense,
-                            netSavings = data.summary.netSavings,
-                            activeBudgets = data.budget.activeBudgets,
-                            recentTransactions = data.transactions.recentTransactions,
-                            isLoading = false,
-                            error = null
-                        )
-                    }
-                }
+                is NetworkResult.Success -> show(result.data, offline = false)
 
-                is NetworkResult.Error -> _state.update {
-                    it.copy(error = result.message, isLoading = false)
+                is NetworkResult.Error -> {
+                    // Server unreachable: compute the dashboard from the last synced copy if there is one
+                    val local = if (result.isNoResponse) dashboardRepo.getLocalDashboard() else null
+                    if (local != null) {
+                        show(local, offline = true)
+                    } else {
+                        _state.update { it.copy(error = result.message, isLoading = false) }
+                    }
                 }
 
                 NetworkResult.Loading -> _state.update { it.copy(isLoading = true) }
             }
+        }
+    }
+
+    private fun show(data: DashboardResponseDTO, offline: Boolean) {
+        _state.update {
+            it.copy(
+                totalIncome = data.summary.totalIncome,
+                totalExpense = data.summary.totalExpense,
+                netSavings = data.summary.netSavings,
+                activeBudgets = data.budget.activeBudgets,
+                recentTransactions = data.transactions.recentTransactions,
+                isOffline = offline,
+                isLoading = false,
+                error = null
+            )
         }
     }
 }

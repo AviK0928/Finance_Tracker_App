@@ -1,6 +1,7 @@
 package com.example.finance_tracker.features.budgets.data
 
 import com.example.finance_tracker.core.data.local.room.dao.BudgetDao
+import com.example.finance_tracker.core.data.local.room.mapper.BudgetMapper
 import com.example.finance_tracker.core.network.ApiResponseHandler
 import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.core.network.apiendpoints.BudgetApi
@@ -29,6 +30,9 @@ class BudgetRepoImpl @Inject constructor(
     override suspend fun deleteBudget(id: Long): NetworkResult<Unit> {
         return ApiResponseHandler.handleApi { api.deleteBudget(id) }.alsoSyncOnSuccess()
     }
+
+    override suspend fun getLocalBudgets(): List<BudgetResponseDTO>? =
+        budgetDao.getAll().takeIf { it.isNotEmpty() }?.map(BudgetMapper::toDTO)
 
     /** A change made online also refreshes the offline copy (the server is the source of truth). */
     private fun <T> NetworkResult<T>.alsoSyncOnSuccess(): NetworkResult<T> = also {

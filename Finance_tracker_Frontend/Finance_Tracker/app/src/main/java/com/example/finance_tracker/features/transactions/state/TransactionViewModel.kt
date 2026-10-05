@@ -68,14 +68,21 @@ class TransactionViewModel @Inject constructor(
                             transactions = if (page == 0) result.data.content else it.transactions + result.data.content,
                             currentPage = result.data.number,
                             totalPages = result.data.totalPages,
+                            isOffline = false,
                             isLoading = false
                         )
                     }
                 }
                 is NetworkResult.Error -> {
-                    // Online-first: show the error. The old offline fallback rendered Room rows as fake
-                    // transactions that all had id 99999999 (duplicate list keys crash the LazyColumn).
-                    _state.update { it.copy(errorMessage = result.message, isLoading = false) }
+                    // Server unreachable: show the last synced copy (all of it, one page) if there is one
+                    val local = if (result.isNoResponse) transactionRepo.getLocalTransactions(_state.value.filter) else null
+                    if (local != null) {
+                        _state.update {
+                            it.copy(transactions = local, currentPage = 0, totalPages = 1, isOffline = true, isLoading = false)
+                        }
+                    } else {
+                        _state.update { it.copy(errorMessage = result.message, isLoading = false) }
+                    }
                 }
                 NetworkResult.Loading -> _state.update { it.copy(isLoading = true) }
             }

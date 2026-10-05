@@ -5,4 +5,7 @@ import com.example.finance_tracker.core.network.model.dashboard.DashboardRespons
 
 interface DashboardRepo {
     suspend fun getDashboardData(): NetworkResult<DashboardResponseDTO>
+
+    /** The same numbers computed from the last synced copy; null when nothing has been synced. */
+    suspend fun getLocalDashboard(): DashboardResponseDTO?
 }
