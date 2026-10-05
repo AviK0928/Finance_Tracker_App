@@ -5,17 +5,19 @@ import com.example.finance_tracker.core.network.ApiResponseHandler
 import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.core.network.apiendpoints.TransactionApi
 import com.example.finance_tracker.core.network.model.transaction.*
+import com.example.finance_tracker.core.sync.SyncTrigger
 import com.example.finance_tracker.features.transactions.domain.TransactionRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class TransactionRepoImpl(
     private val api: TransactionApi,
-    private val transactionDao: TransactionDao
+    private val transactionDao: TransactionDao,
+    private val syncTrigger: SyncTrigger
 ) : TransactionRepo {
 
     override suspend fun createTransaction(dto: TransactionCreateDTO): NetworkResult<TransactionResponseDTO> {
-        return ApiResponseHandler.handleApi { api.createTransaction(dto) }
+        return ApiResponseHandler.handleApi { api.createTransaction(dto) }.alsoSyncOnSuccess()
     }
 
     override suspend fun getTransactionById(id: Long): NetworkResult<TransactionResponseDTO> {
@@ -44,15 +46,16 @@ class TransactionRepoImpl(
     }
 
     override suspend fun updateTransaction(id: Long, dto: TransactionUpdateDTO): NetworkResult<TransactionResponseDTO> {
-        return ApiResponseHandler.handleApi { api.updateTransaction(id, dto) }
+        return ApiResponseHandler.handleApi { api.updateTransaction(id, dto) }.alsoSyncOnSuccess()
     }
 
     override suspend fun deleteTransaction(id: Long): NetworkResult<Unit> {
-        return ApiResponseHandler.handleApi { api.deleteTransaction(id) }.also {
-            if (it is NetworkResult.Success) {
-                // You may implement: transactionDao.deleteById(id)
-            }
-        }
+        return ApiResponseHandler.handleApi { api.deleteTransaction(id) }.alsoSyncOnSuccess()
+    }
+
+    /** A change made online also refreshes the offline copy (the server is the source of truth). */
+    private fun <T> NetworkResult<T>.alsoSyncOnSuccess(): NetworkResult<T> = also {
+        if (it is NetworkResult.Success) syncTrigger.requestSync()
     }
 
     override suspend fun getFilteredTransactionsPaginated(

@@ -26,10 +26,15 @@ import com.example.finance_tracker.features.reports.domain.ReportRepo
 import com.example.finance_tracker.features.settings.data.SettingsRepoImpl
 import com.example.finance_tracker.features.settings.domain.SettingsRepo
 import com.example.finance_tracker.core.sync.SyncRepo
+import com.example.finance_tracker.core.sync.SessionSyncCoordinator
 import com.example.finance_tracker.core.sync.SyncRepoImpl
+import com.example.finance_tracker.core.sync.SyncTrigger
 import com.example.finance_tracker.features.transactions.data.TransactionRepoImpl
 import com.example.finance_tracker.features.transactions.domain.TransactionRepo
 import dagger.Module
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
@@ -50,8 +55,9 @@ object AppModule {
     @Singleton
     fun provideBudgetRepo(
         budgetApi: BudgetApi,
-        budgetDao: BudgetDao
-    ): BudgetRepo = BudgetRepoImpl(budgetApi, budgetDao)
+        budgetDao: BudgetDao,
+        syncTrigger: SyncTrigger
+    ): BudgetRepo = BudgetRepoImpl(budgetApi, budgetDao, syncTrigger)
 
     @Provides
     @Singleton
@@ -90,7 +96,17 @@ object AppModule {
     @Singleton
     fun provideTransactionRepo(
         transactionApi: TransactionApi,
-        transactionDao: TransactionDao
-    ): TransactionRepo = TransactionRepoImpl(transactionApi, transactionDao)
+        transactionDao: TransactionDao,
+        syncTrigger: SyncTrigger
+    ): TransactionRepo = TransactionRepoImpl(transactionApi, transactionDao, syncTrigger)
+
+    /** Lives as long as the app; SupervisorJob so one failed job does not cancel the others. */
+    @Provides
+    @Singleton
+    @ApplicationScope
+    fun provideApplicationScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    @Provides
+    fun provideSyncTrigger(coordinator: SessionSyncCoordinator): SyncTrigger = coordinator
 
 }

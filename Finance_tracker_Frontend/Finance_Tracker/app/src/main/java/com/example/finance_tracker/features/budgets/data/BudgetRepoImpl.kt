@@ -5,6 +5,7 @@ import com.example.finance_tracker.core.network.ApiResponseHandler
 import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.core.network.apiendpoints.BudgetApi
 import com.example.finance_tracker.core.network.model.budget.*
+import com.example.finance_tracker.core.sync.SyncTrigger
 import com.example.finance_tracker.features.budgets.domain.BudgetRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -13,21 +14,25 @@ import javax.inject.Inject
 
 class BudgetRepoImpl @Inject constructor(
     private val api: BudgetApi,
-    private val budgetDao: BudgetDao
+    private val budgetDao: BudgetDao,
+    private val syncTrigger: SyncTrigger
 ) : BudgetRepo {
 
     override suspend fun createBudget(dto: BudgetCreateDTO): NetworkResult<BudgetResponseDTO> {
-        return ApiResponseHandler.handleApi { api.createBudget(dto) }
+        return ApiResponseHandler.handleApi { api.createBudget(dto) }.alsoSyncOnSuccess()
     }
 
     override suspend fun updateBudget(id: Long, dto: BudgetUpdateDTO): NetworkResult<BudgetResponseDTO> {
-        return ApiResponseHandler.handleApi { api.updateBudget(id, dto) }
+        return ApiResponseHandler.handleApi { api.updateBudget(id, dto) }.alsoSyncOnSuccess()
     }
 
     override suspend fun deleteBudget(id: Long): NetworkResult<Unit> {
-        return ApiResponseHandler.handleApi { api.deleteBudget(id) }.also {
-            // Room deletion is handled during sync
-        }
+        return ApiResponseHandler.handleApi { api.deleteBudget(id) }.alsoSyncOnSuccess()
+    }
+
+    /** A change made online also refreshes the offline copy (the server is the source of truth). */
+    private fun <T> NetworkResult<T>.alsoSyncOnSuccess(): NetworkResult<T> = also {
+        if (it is NetworkResult.Success) syncTrigger.requestSync()
     }
 
     override suspend fun getBudgetById(id: Long): NetworkResult<BudgetResponseDTO> {
