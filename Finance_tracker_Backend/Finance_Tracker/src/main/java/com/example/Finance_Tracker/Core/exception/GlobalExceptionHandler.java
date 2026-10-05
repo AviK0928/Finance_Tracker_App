@@ -18,12 +18,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.lang.Nullable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.method.ParameterErrors;
+import org.springframework.validation.method.ParameterValidationResult;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.LinkedHashMap;
@@ -95,14 +98,35 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         for (FieldError error : ex.getBindingResult().getFieldErrors()) {
             fieldErrors.putIfAbsent(error.getField(), error.getDefaultMessage());
         }
-        String message = fieldErrors.entrySet().stream()
-                .map(e -> e.getKey() + ": " + e.getValue())
-                .collect(Collectors.joining("; "));
-        if (message.isEmpty()) {
-            message = "Validation failed";
+        return validationFailed(fieldErrors, headers, request);
+    }
+
+    /**
+     * Method validation (Spring 6.1+), e.g. {@code @RequestBody List<@Valid X>} or a constraint on a
+     * {@code @RequestParam}. Without this override the client only gets the generic "Validation failure".
+     * Keys name the failing value: {@code settings[1].key} for a list element field, {@code page} for a parameter.
+     */
+    @Override
+    protected ResponseEntity<Object> handleHandlerMethodValidationException(HandlerMethodValidationException ex,
+                                                                            HttpHeaders headers,
+                                                                            HttpStatusCode status,
+                                                                            WebRequest request) {
+        if (ex.isForReturnValue()) {
+            // A response that violates its own constraints is a server bug (500); do not expose the details.
+            return super.handleHandlerMethodValidationException(ex, headers, status, request);
         }
-        ApiError body = ApiError.of(HttpStatus.BAD_REQUEST, message, path(request), fieldErrors);
-        return new ResponseEntity<>(body, headers, HttpStatus.BAD_REQUEST);
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+        for (ParameterValidationResult result : ex.getParameterValidationResults()) {
+            String name = parameterPath(result);
+            if (result instanceof ParameterErrors errors && errors.hasFieldErrors()) {
+                for (FieldError error : errors.getFieldErrors()) {
+                    fieldErrors.putIfAbsent(name + "." + error.getField(), error.getDefaultMessage());
+                }
+            } else {
+                result.getResolvableErrors().forEach(error -> fieldErrors.putIfAbsent(name, error.getDefaultMessage()));
+            }
+        }
+        return validationFailed(fieldErrors, headers, request);
     }
 
     @Override
@@ -128,6 +152,32 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     // ---------- helpers ----------
+
+    /** 400 with one "field: message" pair per failing field, joined into {@code message} as well. */
+    private static ResponseEntity<Object> validationFailed(Map<String, String> fieldErrors,
+                                                           HttpHeaders headers,
+                                                           WebRequest request) {
+        String message = fieldErrors.entrySet().stream()
+                .map(e -> e.getKey() + ": " + e.getValue())
+                .collect(Collectors.joining("; "));
+        if (message.isEmpty()) {
+            message = "Validation failed";
+        }
+        ApiError body = ApiError.of(HttpStatus.BAD_REQUEST, message, path(request), fieldErrors);
+        return new ResponseEntity<>(body, headers, HttpStatus.BAD_REQUEST);
+    }
+
+    /** Parameter name plus the element position for container elements, e.g. {@code settings[1]}. */
+    private static String parameterPath(ParameterValidationResult result) {
+        String name = result.getMethodParameter().getParameterName();
+        StringBuilder path = new StringBuilder(name != null ? name : "parameter");
+        if (result.getContainerIndex() != null) {
+            path.append('[').append(result.getContainerIndex()).append(']');
+        } else if (result.getContainerKey() != null) {
+            path.append('[').append(result.getContainerKey()).append(']');
+        }
+        return path.toString();
+    }
 
     private static ResponseEntity<ApiError> build(HttpStatus status, String message, HttpServletRequest request) {
         return ResponseEntity.status(status).body(ApiError.of(status, message, request.getRequestURI(), null));

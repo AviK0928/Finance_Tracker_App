@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -64,6 +66,11 @@ class GlobalExceptionHandlerTest {
 
         @PostMapping("/validated")
         public String validated(@Valid @RequestBody Payload payload) {
+            return "ok";
+        }
+
+        @PostMapping("/validated-list")
+        public String validatedList(@RequestBody List<@Valid Payload> payloads) {
             return "ok";
         }
     }
@@ -129,6 +136,16 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fieldErrors.name").value("Name is required"))
                 .andExpect(jsonPath("$.message").value("name: Name is required"));
+    }
+
+    @Test
+    void listElementValidationFailure_returns400WithIndexedFieldErrors() throws Exception {
+        mockMvc.perform(post("/test/validated-list")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[{\"name\":\"ok\"},{\"name\":\"\"}]"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors['payloads[1].name']").value("Name is required"))
+                .andExpect(jsonPath("$.message").value("payloads[1].name: Name is required"));
     }
 
     @Test

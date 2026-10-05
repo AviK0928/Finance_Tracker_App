@@ -40,7 +40,7 @@ public class ReportService {
 
         BigDecimal totalIncome = BigDecimal.ZERO;
         BigDecimal totalExpense = BigDecimal.ZERO;
-        Map<String, BigDecimal> categoryBreakdown = new HashMap<>();
+        Map<String, BigDecimal> categoryBreakdown = newCategoryMap();
 
         for (Transaction txn : transactions) {
             BigDecimal amt = txn.getAmount();
@@ -63,7 +63,7 @@ public class ReportService {
 
         List<Transaction> transactions = transactionRepository.findByUserId(userId);
 
-        Map<String, BigDecimal> categoryTotals = new HashMap<>();
+        Map<String, BigDecimal> categoryTotals = newCategoryMap();
         for (Transaction txn : transactions) {
             if ("expense".equalsIgnoreCase(String.valueOf(txn.getType()))) {
                 categoryTotals.merge(txn.getCategory(), txn.getAmount(), BigDecimal::add);
@@ -73,6 +73,15 @@ public class ReportService {
         return categoryTotals.entrySet().stream()
                 .map(entry -> new CategoryReportDTO(entry.getKey(), entry.getValue()))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Categories that differ only in case ("Food", "food") are one category, as in budgets
+     * (LOWER(category) in BudgetRepository). The first spelling seen is the one reported;
+     * entries come out sorted by name, case-insensitively.
+     */
+    private static Map<String, BigDecimal> newCategoryMap() {
+        return new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     }
 
     public List<TrendReportDTO> getTrendReport(String period) {
