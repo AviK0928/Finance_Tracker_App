@@ -1,7 +1,10 @@
 {
   "name": "Finance Tracker",
-  "image": "mcr.microsoft.com/devcontainers/java:1-17-bookworm",
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
   "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "17"
+    },
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
   "hostRequirements": {
