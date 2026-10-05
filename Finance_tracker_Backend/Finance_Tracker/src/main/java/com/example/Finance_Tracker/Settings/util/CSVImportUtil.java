@@ -62,7 +62,7 @@ public class CSVImportUtil {
             for (CSVRecord record : parser) {
                 Transaction txn = new Transaction();
                 txn.setUserId(Long.parseLong(record.get("userId")));
-                txn.setAmount(Double.parseDouble(record.get("amount")));
+                txn.setAmount(new BigDecimal(record.get("amount")));
                 txn.setType(TransactionType.valueOf(record.get("type")));
                 txn.setCategory(record.get("category"));
                 txn.setDescription(record.get("description").isEmpty() ? null : record.get("description"));

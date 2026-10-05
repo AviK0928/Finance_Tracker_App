@@ -55,11 +55,11 @@ public class PDFExportUtil {
                 table.addCell(dateStr);
                 table.addCell(txn.getCategory() != null ? txn.getCategory() : "-");
                 table.addCell(txn.getType() != null ? capitalize(txn.getType().name()) : "-");
-                table.addCell(txn.getAmount() != null ? txn.getAmount().toString() : "0.00");
+                table.addCell(txn.getAmount() != null ? txn.getAmount().toPlainString() : "0.00");
                 table.addCell(txn.getDescription() != null ? txn.getDescription() : "-");
 
                 if (txn.getAmount() != null) {
-                    total = total.add(BigDecimal.valueOf(txn.getAmount()));
+                    total = total.add(txn.getAmount());
                 }
             }
 

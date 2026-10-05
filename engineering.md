@@ -125,3 +125,16 @@
 - **Learning:** with `validate`, the `contextLoads` test becomes a real migration test: it boots the app against Postgres, applies the migrations, and checks every entity mapping.
 - **Learning:** `UID` is a read-only bash variable; use another name in scripts.
 - **Verified:** full suite 23/23 (incl. `contextLoads`); log shows `Successfully applied 1 migration ... now at version v1`; delete-account removes the user's transactions and notifications (`1|2` → `0|0|0`).
+
+## 2026-10-05 — Money as exact decimals (`refactor/money-bigdecimal`)
+
+- **Problem:** `transactions.amount` was `Double` / `DOUBLE PRECISION` while budgets already used `BigDecimal` / `NUMERIC(19,2)`. Java code wrapped every read in `BigDecimal.valueOf(double)`, which happens to give exact Java-side sums. But any **SQL** aggregation over the float column drifts, and unit 4c computes budget spending with SQL `SUM`.
+- **Evidence:** on the float schema, two expenses of 0.10 and 0.20 gave `SELECT SUM(amount)` = `0.30000000000000004`. After `V2` migrated the same rows: `0.30`.
+- **Fix:**
+  - `V2__transaction_amount_numeric.sql`: `ALTER COLUMN amount TYPE NUMERIC(19,2) USING ROUND(amount::NUMERIC, 2)` + `CHECK (amount > 0)`.
+  - `BigDecimal` end-to-end: entity, create/update/filter DTOs, controller params, specification, services, PDF/CSV utilities, sync mapper.
+  - `@Digits(integer = 17, fraction = 2)` on create/update DTOs: `10.999` is rejected (400) instead of silently rounded.
+- **Gotcha (hashing):** `BigDecimal("12000")` and `BigDecimal("12000.00")` have different `toString()`s. The API may receive the former while Postgres returns the latter, so the content hash (used for import de-duplication) would change without the data changing. `computeHash()` and `HashUtils` now normalize with `setScale(2).toPlainString()`.
+- **Gotcha (Flyway):** `V2` converted rows that already existed. `ALTER ... TYPE ... USING` needs an explicit conversion expression for float → numeric; the `ROUND(..., 2)` makes the precision loss explicit rather than implicit.
+- **Wire compatibility:** JSON numbers bind to `BigDecimal` on the server and to `Double` in the current Android DTOs, so the app keeps working unchanged; Android-side money types get aligned in the API-contract phase.
+- **Verified:** suite 33/33 (incl. `contextLoads` applying V2 on a DB with existing float rows); Flyway history `1:true 2:true`; column `numeric(19,2)`; `10.999` → 400; `10.50` → 201.

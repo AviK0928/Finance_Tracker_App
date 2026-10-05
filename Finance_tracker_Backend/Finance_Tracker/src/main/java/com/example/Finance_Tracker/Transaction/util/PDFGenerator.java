@@ -56,11 +56,11 @@ public class PDFGenerator {
                 table.addCell(dateStr);
                 table.addCell(txn.getCategory() != null ? txn.getCategory() : "-");
                 table.addCell(txn.getType() != null ? txn.getType().toString() : "-");
-                table.addCell(txn.getAmount() != null ? txn.getAmount().toString() : "0.00");
+                table.addCell(txn.getAmount() != null ? txn.getAmount().toPlainString() : "0.00");
                 table.addCell(txn.getDescription() != null ? txn.getDescription() : "-");
 
                 if (txn.getAmount() != null) {
-                    totalAmount = totalAmount.add(BigDecimal.valueOf(txn.getAmount()));
+                    totalAmount = totalAmount.add(txn.getAmount());
                 }
             }
 

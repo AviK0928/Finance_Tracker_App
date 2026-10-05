@@ -30,7 +30,7 @@ public class TransactionResponseDTO {
                 .id(transaction.getId())
                 .userId(transaction.getUserId())
                 .description(transaction.getDescription())
-                .amount(BigDecimal.valueOf(transaction.getAmount()))
+                .amount(transaction.getAmount())
                 .type(transaction.getType())
                 .category(transaction.getCategory())
                 .createdAt(transaction.getCreatedAt())

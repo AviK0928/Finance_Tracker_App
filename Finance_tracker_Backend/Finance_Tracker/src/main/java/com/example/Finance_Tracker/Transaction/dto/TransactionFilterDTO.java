@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -25,8 +26,8 @@ public class TransactionFilterDTO {
     private LocalDateTime endDate;
 
     @DecimalMin(value = "0.01", message = "Amount Must be Greater than 0")
-    private Double minAmount;
+    private BigDecimal minAmount;
 
     @DecimalMin(value = "0.01", message = "Amount Must be Greater than 0")
-    private Double maxAmount;
+    private BigDecimal maxAmount;
 }

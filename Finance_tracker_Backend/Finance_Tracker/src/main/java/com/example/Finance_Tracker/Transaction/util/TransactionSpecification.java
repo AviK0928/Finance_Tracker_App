@@ -5,6 +5,7 @@ import com.example.Finance_Tracker.Transaction.entity.Transaction;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,8 +17,8 @@ public class TransactionSpecification {
             TransactionType type,
             LocalDateTime startDate,
             LocalDateTime endDate,
-            Double minAmount,
-            Double maxAmount){
+            BigDecimal minAmount,
+            BigDecimal maxAmount){
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(criteriaBuilder.equal(root.get("userId"), userId));
@@ -54,8 +55,8 @@ public class TransactionSpecification {
             TransactionType type = filter.getType();
             LocalDateTime startDate = filter.getStartDate();
             LocalDateTime endDate = filter.getEndDate();
-            Double minAmount = filter.getMinAmount();
-            Double maxAmount = filter.getMaxAmount();
+            BigDecimal minAmount = filter.getMinAmount();
+            BigDecimal maxAmount = filter.getMaxAmount();
 
             if (userId != null) {
                 predicates.add(criteriaBuilder.equal(root.get("userId"), userId));

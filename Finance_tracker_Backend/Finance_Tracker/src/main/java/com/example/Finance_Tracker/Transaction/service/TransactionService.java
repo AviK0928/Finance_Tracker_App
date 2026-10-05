@@ -84,7 +84,7 @@ public class TransactionService {
         );
         transaction = transactionRepository.save(transaction);
 
-        BigDecimal amount = BigDecimal.valueOf(transaction.getAmount());
+        BigDecimal amount = transaction.getAmount();
         String type = String.valueOf(transaction.getType());
 
         // 1️⃣ High-Value Expense (> ₹10,000)

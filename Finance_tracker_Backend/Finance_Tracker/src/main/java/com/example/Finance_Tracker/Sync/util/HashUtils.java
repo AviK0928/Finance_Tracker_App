@@ -3,6 +3,7 @@ package com.example.Finance_Tracker.Sync.util;
 import com.example.Finance_Tracker.Budget.entity.Budget;
 import com.example.Finance_Tracker.Transaction.entity.Transaction;
 
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -22,7 +23,7 @@ public class HashUtils {
     }
 
     public static String computeTransactionHash(Transaction tx) {
-        String raw = tx.getAmount()
+        String raw = tx.getAmount().setScale(2, RoundingMode.HALF_UP).toPlainString()
                 + tx.getType().name()
                 + tx.getCategory()
                 + (tx.getDescription() != null ? tx.getDescription() : "")

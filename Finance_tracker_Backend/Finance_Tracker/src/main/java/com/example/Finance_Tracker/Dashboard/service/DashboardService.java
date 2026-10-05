@@ -46,9 +46,9 @@ public class DashboardService {
 
         for (Transaction t : transactions) {
             if (t.getType() == TransactionType.INCOME) {
-                totalIncome = totalIncome.add(BigDecimal.valueOf(t.getAmount()));
+                totalIncome = totalIncome.add(t.getAmount());
             } else if (t.getType() == TransactionType.EXPENSE) {
-                totalExpense = totalExpense.add(BigDecimal.valueOf(t.getAmount()));
+                totalExpense = totalExpense.add(t.getAmount());
             }
         }
 

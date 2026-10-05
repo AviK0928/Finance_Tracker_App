@@ -43,7 +43,7 @@ public class ReportService {
         Map<String, BigDecimal> categoryBreakdown = new HashMap<>();
 
         for (Transaction txn : transactions) {
-            BigDecimal amt = BigDecimal.valueOf(txn.getAmount());
+            BigDecimal amt = txn.getAmount();
             if ("income".equalsIgnoreCase(String.valueOf(txn.getType()))) {
                 totalIncome = totalIncome.add(amt);
             } else {
@@ -66,7 +66,7 @@ public class ReportService {
         Map<String, BigDecimal> categoryTotals = new HashMap<>();
         for (Transaction txn : transactions) {
             if ("expense".equalsIgnoreCase(String.valueOf(txn.getType()))) {
-                categoryTotals.merge(txn.getCategory(), BigDecimal.valueOf(txn.getAmount()), BigDecimal::add);
+                categoryTotals.merge(txn.getCategory(), txn.getAmount(), BigDecimal::add);
             }
         }
 
@@ -101,9 +101,9 @@ public class ReportService {
             LocalDate date = txn.getTransactionDate().toLocalDate();
             Report data = dailyMap.getOrDefault(date, new Report(date.atStartOfDay(), BigDecimal.ZERO, BigDecimal.ZERO));
             if ("income".equalsIgnoreCase(String.valueOf(txn.getType()))) {
-                data.setIncome(data.getIncome().add(BigDecimal.valueOf(txn.getAmount())));
+                data.setIncome(data.getIncome().add(txn.getAmount()));
             } else {
-                data.setExpense(data.getExpense().add(BigDecimal.valueOf(txn.getAmount())));
+                data.setExpense(data.getExpense().add(txn.getAmount()));
             }
             dailyMap.put(date, data);
         }

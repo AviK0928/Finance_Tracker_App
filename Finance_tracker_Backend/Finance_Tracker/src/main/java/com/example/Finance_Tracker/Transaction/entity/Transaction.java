@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -25,8 +27,8 @@ public class Transaction {
     @Column(nullable = false)
     private Long userId;
 
-    @Column(nullable = false)
-    private Double amount;
+    @Column(nullable = false, precision = 19, scale = 2)
+    private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -64,7 +66,8 @@ public class Transaction {
     }
 
     private String computeHash() {
-        String raw = amount + type.name() + category + (description != null ? description : "") + transactionDate;
+        // setScale(2) so 12000 and 12000.00 hash identically (the DB always returns scale 2)
+        String raw = amount.setScale(2, RoundingMode.HALF_UP).toPlainString() + type.name() + category + (description != null ? description : "") + transactionDate;
         return sha256(raw);
     }
 
