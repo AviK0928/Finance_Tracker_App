@@ -69,3 +69,9 @@ yarn-error.log
 # === Test output ===
 /test-output/
 /test-results/
+
+# === Exceptions (must come last so they override the patterns above) ===
+# Gradle wrapper jar is required for ./gradlew to work on a fresh clone
+!**/gradle/wrapper/gradle-wrapper.jar
+# Template for local environment variables (the real .env stays ignored)
+!.env.example

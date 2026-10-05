@@ -1,87 +1,88 @@
-#  Finance Tracker App
+# Finance Tracker
 
-A full-stack personal finance tracking application built with:
+A personal finance tracker: an **Android app** (Kotlin, Jetpack Compose) backed by a **Spring Boot REST API** (Java, PostgreSQL).
 
-- **Frontend:** Android (Kotlin, Jetpack Compose, Hilt, Material 3)
-- **Backend:** Spring Boot (Java), REST APIs, JWT-based Auth
+> **Status:** under active refactoring toward a production-quality codebase. Progress and lessons learned are logged in [`engineering.md`](engineering.md).
 
----
+## Tech stack
 
-##  Project Structure
+| Layer | Technologies |
+|---|---|
+| Android app | Kotlin 2.0, Jetpack Compose, Material 3, Hilt, Retrofit/OkHttp, Room, DataStore, Navigation Compose |
+| Backend API | Java 17, Spring Boot 3.5, Spring Security (JWT), Spring Data JPA, WebSocket (STOMP), OpenPDF, Commons CSV |
+| Database | PostgreSQL 16 |
+| Dev environment | GitHub Codespaces / Dev Containers, Docker Compose |
 
-```
-finance-tracker/
-├── backend/        # Spring Boot backend
-├── frontend/       # Android app using Jetpack Compose
-└── README.md
-```
+## Repository layout
 
----
+~~~
+.
+├── Finance_tracker_Backend/Finance_Tracker/    # Spring Boot API (Maven)
+├── Finance_tracker_Frontend/Finance_Tracker/   # Android app (Gradle)
+├── .devcontainer/                              # Codespaces / Dev Container setup
+├── docker-compose.yml                          # Local PostgreSQL
+├── .env.example                                # Environment variable template
+└── engineering.md                              # Engineering log
+~~~
 
-##  Getting Started
+## Quick start (GitHub Codespaces — recommended)
 
-###  Prerequisites
+1. On GitHub: **Code → Codespaces → Create codespace on main**.
+2. Wait for setup to finish (first time ~5 min). The dev container:
+   - provides **JDK 17**,
+   - installs the **Android SDK** (platform 35, build-tools 34/35),
+   - creates **`.env`** from `.env.example` with a generated `JWT_SECRET`,
+   - starts **PostgreSQL** via Docker Compose on every start.
 
-- **Java 17+**
-- **Android Studio Hedgehog or later**
-- **Gradle 8+**
-- **Maven 3+**
-- **Postgres**
-- **Git**
+### Run the backend
 
+~~~bash
+set -a; source .env; set +a
+cd Finance_tracker_Backend/Finance_Tracker
+./mvnw spring-boot:run
+~~~
 
----
+The API listens on `http://localhost:8080`. Smoke test: `curl http://localhost:8080/api/test` → `Hello, Anonymous`.
 
-## Backend Setup (Spring Boot)
+### Build the Android app
 
-```bash
-cd backend
-./gradlew bootRun
-```
+~~~bash
+cd Finance_tracker_Frontend/Finance_Tracker
+./gradlew :app:assembleDebug
+~~~
 
-- Server starts at `http://localhost:8080`
-- Make sure to configure DB credentials in `application.properties`
-- Provides REST APIs for auth, transactions, budgets, reports, notifications, settings
+The APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 
----
+## Local setup (without Codespaces)
 
-## Frontend Setup (Android)
+Requirements: **JDK 17** (JDK 25+ is not supported by the current toolchain), Docker, and the Android SDK (platform 35) for the app.
 
-```bash
-cd frontend
-./gradlew assembleDebug
-```
+~~~bash
+cp .env.example .env                       # then set JWT_SECRET (openssl rand -base64 32)
+docker compose up -d db                    # PostgreSQL on localhost:5432
+set -a; source .env; set +a
+(cd Finance_tracker_Backend/Finance_Tracker && ./mvnw spring-boot:run)
+~~~
 
-- Open the `frontend` folder in **Android Studio**
-- Run on emulator or physical device
-- Uses Jetpack Compose, Material 3, Navigation, Hilt DI
+For the Android build, create `Finance_tracker_Frontend/Finance_Tracker/local.properties` containing `sdk.dir=/path/to/android-sdk`.
 
----
+## Configuration
 
-## Authentication
+All secrets and environment-specific values come from environment variables (see [`.env.example`](.env.example)):
 
-- Login/Register via REST endpoints
-- JWT token is stored using `TokenManager`
-- Logout/Delete account clears token and resets state
-
----
+| Variable | Required | Purpose |
+|---|---|---|
+| `DB_URL` | no (defaults to local Postgres) | JDBC URL |
+| `DB_USERNAME` | no (defaults to `postgres`) | DB user |
+| `DB_PASSWORD` | **yes** | DB password |
+| `JWT_SECRET` | **yes** | Base64 HMAC key (≥ 32 bytes) for signing JWTs |
+| `MAIL_USERNAME` / `MAIL_PASSWORD` | no | SMTP credentials for password-reset emails |
 
 ## Features
 
-### Frontend (Jetpack Compose)
-- [x] Auth screens (Login, Forgot, Reset)
-- [x] Dashboard with 3 tabs
-- [x] Transactions: create/edit/list
-- [x] Budgets: create/edit/list
-- [x] Reports: monthly, category, trend
-- [x] Notifications (WebSocket)
-- [x] Settings: export/import/sync/logout/delete
-
-### Backend (Spring Boot)
-- [x] JWT Authentication
-- [x] CRUD for all finance models
-- [x] PDF export, JSON import
-- [x] Real-time notifications via WebSocket
-- [x] Settings persistence
-
----
+- Account registration and login (JWT), forgot/reset password
+- Transactions: create, edit, delete, filter, paginate, export to PDF
+- Budgets: create, edit, delete, filter, export to PDF
+- Dashboard summary, monthly / category / trend reports
+- Notifications (REST, with WebSocket push planned)
+- Settings, data export/import (ZIP of CSVs)
