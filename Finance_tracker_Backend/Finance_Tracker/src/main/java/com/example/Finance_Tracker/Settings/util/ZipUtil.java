@@ -19,6 +19,9 @@ public class ZipUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(ZipUtil.class);
 
+    /** Upper bound for one extracted entry: a small upload can decompress to gigabytes (zip bomb). */
+    public static final long MAX_ENTRY_BYTES = 10L * 1024 * 1024;
+
     public static byte[] createZipFromFiles(Map<String, byte[]> files) {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
              ZipOutputStream zos = new ZipOutputStream(baos)) {
@@ -50,9 +53,7 @@ public class ZipUtil {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
                 if (expectedFilenames.contains(entry.getName())) {
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    zis.transferTo(baos);
-                    fileMap.put(entry.getName(), new ByteArrayInputStream(baos.toByteArray()));
+                    fileMap.put(entry.getName(), new ByteArrayInputStream(readBounded(zis, entry.getName())));
                 }
             }
         } catch (IOException e) {
@@ -66,5 +67,20 @@ public class ZipUtil {
         }
 
         return fileMap;
+    }
+
+    private static byte[] readBounded(InputStream in, String name) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        byte[] buffer = new byte[8192];
+        long total = 0;
+        int read;
+        while ((read = in.read(buffer)) != -1) {
+            total += read;
+            if (total > MAX_ENTRY_BYTES) {
+                throw new IllegalArgumentException("Import file entry is too large: " + name);
+            }
+            out.write(buffer, 0, read);
+        }
+        return out.toByteArray();
     }
 }

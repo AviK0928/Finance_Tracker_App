@@ -34,7 +34,7 @@ public class ExportService {
      * Generates a ZIP file with:
      * - budgets.csv
      * - transactions.csv
-     * - user_settings.csv
+     * - settings.csv
      * - transaction_report.pdf
      */
     public byte[] exportUserData(Long userId) {
@@ -43,9 +43,9 @@ public class ExportService {
         List<UserSetting> settings = settingRepository.findByUserId(userId);
 
         Map<String, byte[]> files = new HashMap<>();
-        files.put("budgets.csv", CSVExportUtil.exportBudgetsToCSV(budgets));
-        files.put("transactions.csv", CSVExportUtil.exportTransactionsToCSV(transactions));
-        files.put("user_settings.csv", CSVExportUtil.exportSettingsToCSV(settings));
+        files.put(ImportService.BUDGETS_CSV, CSVExportUtil.exportBudgetsToCSV(budgets));
+        files.put(ImportService.TRANSACTIONS_CSV, CSVExportUtil.exportTransactionsToCSV(transactions));
+        files.put(ImportService.SETTINGS_CSV, CSVExportUtil.exportSettingsToCSV(settings));
         files.put("transaction_report.pdf", PDFExportUtil.generateTransactionPDF(transactions));
 
         return ZipUtil.createZipFromFiles(files);

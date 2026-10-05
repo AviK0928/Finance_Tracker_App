@@ -7,6 +7,7 @@ import com.example.finance_tracker.core.network.ApiResponseHandler
 import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.core.network.RetrofitInstance
 import com.example.finance_tracker.core.network.apiendpoints.SettingsApi
+import com.example.finance_tracker.core.network.model.settings.ImportSummaryDTO
 import com.example.finance_tracker.core.network.model.settings.UpdateSettingDTO
 import com.example.finance_tracker.core.network.model.settings.UserSettingDTO
 import com.example.finance_tracker.features.settings.domain.SettingsRepo
@@ -73,11 +74,15 @@ class SettingsRepoImpl(
         }
     }
 
-    override suspend fun exportData(): NetworkResult<ByteArray> {
-        return ApiResponseHandler.handleApi { api.exportData() }
+    override suspend fun exportData(): NetworkResult<ByteArray> = withContext(Dispatchers.IO) {
+        when (val result = ApiResponseHandler.handleApi { api.exportData() }) {
+            is NetworkResult.Success -> NetworkResult.Success(result.data.use { it.bytes() })
+            is NetworkResult.Error -> result
+            is NetworkResult.Loading -> NetworkResult.Loading
+        }
     }
 
-    override suspend fun importData(file: ByteArray, filename: String): NetworkResult<Unit> {
+    override suspend fun importData(file: ByteArray, filename: String): NetworkResult<ImportSummaryDTO> {
         val requestBody = file.toRequestBody("application/zip".toMediaTypeOrNull())
         val multipartFile = MultipartBody.Part.createFormData("file", filename, requestBody)
         return ApiResponseHandler.handleApi { api.importData(multipartFile) }

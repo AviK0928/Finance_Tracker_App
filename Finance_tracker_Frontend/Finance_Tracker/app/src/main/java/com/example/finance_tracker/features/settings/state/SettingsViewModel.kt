@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.finance_tracker.core.data.local.preferences.TokenManager
 import com.example.finance_tracker.core.network.NetworkResult
+import com.example.finance_tracker.core.network.model.settings.ImportSummaryDTO
 import com.example.finance_tracker.core.network.model.settings.UpdateSettingDTO
 import com.example.finance_tracker.core.network.model.sync.SyncRequestDTO
 import com.example.finance_tracker.features.settings.domain.SettingsRepo
@@ -39,6 +40,10 @@ class SettingsViewModel @Inject constructor(
             is SettingsEvent.ImportData -> importData(event.file, event.filename)
             is SettingsEvent.PerformSync -> performSync(event.lastSync, event.manual)
             is SettingsEvent.ClearError -> _state.update { it.copy(errorMessage = null) }
+            is SettingsEvent.ClearInfo -> _state.update { it.copy(infoMessage = null) }
+            is SettingsEvent.ExportSaved -> _state.update {
+                it.copy(pendingExport = null, infoMessage = if (event.saved) "Export saved" else null)
+            }
         }
     }
 
@@ -113,7 +118,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
             when (val result = settingsRepo.exportData()) {
-                is NetworkResult.Success -> _state.update { it.copy(isLoading = false) }
+                is NetworkResult.Success -> _state.update { it.copy(isLoading = false, pendingExport = result.data) }
                 is NetworkResult.Error -> _state.update { it.copy(errorMessage = result.message, isLoading = false) }
                 else -> Unit
             }
@@ -124,11 +129,20 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
             when (val result = settingsRepo.importData(file, filename)) {
-                is NetworkResult.Success -> loadSettings()
+                is NetworkResult.Success -> {
+                    _state.update { it.copy(infoMessage = result.data.toMessage()) }
+                    loadSettings()
+                }
                 is NetworkResult.Error -> _state.update { it.copy(errorMessage = result.message, isLoading = false) }
                 else -> Unit
             }
         }
+    }
+
+    private fun ImportSummaryDTO.toMessage(): String {
+        val skipped = budgetsSkipped + transactionsSkipped + settingsSkipped
+        return "Imported $budgetsImported budgets, $transactionsImported transactions, " +
+                "$settingsImported settings ($skipped already present)"
     }
 
     private fun performSync(lastSync: LocalDateTime, manual: Boolean) {

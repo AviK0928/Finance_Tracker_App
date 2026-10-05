@@ -30,9 +30,10 @@ public class ImportService {
     private final TransactionRepository transactionRepository;
     private final UserSettingRepository userSettingRepository;
 
-    private static final String BUDGETS_CSV = "budgets.csv";
-    private static final String TRANSACTIONS_CSV = "transactions.csv";
-    private static final String SETTINGS_CSV = "settings.csv";
+    // Entry names inside the export ZIP; ExportService writes the same names so an export can be re-imported
+    static final String BUDGETS_CSV = "budgets.csv";
+    static final String TRANSACTIONS_CSV = "transactions.csv";
+    static final String SETTINGS_CSV = "settings.csv";
 
     @Transactional
     public ImportSummaryDTO importUserData(MultipartFile file, Long userId) {

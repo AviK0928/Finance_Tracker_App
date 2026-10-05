@@ -17,6 +17,7 @@ import com.example.finance_tracker.core.ui.components.ErrorMessage
 import com.example.finance_tracker.core.ui.components.LoadingIndicator
 import com.example.finance_tracker.features.settings.state.SettingsEvent
 import com.example.finance_tracker.features.settings.state.SettingsViewModel
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,11 +37,35 @@ fun SettingsScreen(
                 val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                 cursor.moveToFirst()
                 cursor.getString(nameIndex)
-            } ?: "imported_data.json"
+            } ?: "import.zip"
 
             inputStream?.readBytes()?.let { bytes ->
                 viewModel.onEvent(SettingsEvent.ImportData(bytes, filename))
             }
+        }
+    }
+
+    // Export: once the ZIP is downloaded, ask the user where to save it (Storage Access Framework)
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/zip")
+    ) { uri ->
+        val bytes = state.pendingExport
+        val saved = uri != null && bytes != null && runCatching {
+            context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) } != null
+        }.getOrDefault(false)
+        viewModel.onEvent(SettingsEvent.ExportSaved(saved))
+    }
+
+    LaunchedEffect(state.pendingExport) {
+        if (state.pendingExport != null) {
+            exportLauncher.launch("finance_export_${LocalDate.now()}.zip")
+        }
+    }
+
+    LaunchedEffect(state.infoMessage) {
+        state.infoMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.onEvent(SettingsEvent.ClearInfo)
         }
     }
 

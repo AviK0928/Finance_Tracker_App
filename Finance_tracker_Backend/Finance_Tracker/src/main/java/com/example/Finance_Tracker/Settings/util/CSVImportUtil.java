@@ -14,6 +14,7 @@ import org.apache.commons.csv.CSVRecord;
 import java.io.InputStreamReader;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -25,7 +26,7 @@ public class CSVImportUtil {
         List<Budget> budgets = new ArrayList<>();
         try (CSVParser parser = CSVFormat.DEFAULT
                 .withFirstRecordAsHeader()
-                .parse(new InputStreamReader(inputStream))) {
+                .parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
 
             for (CSVRecord record : parser) {
                 Budget budget = Budget.builder()
@@ -49,7 +50,8 @@ public class CSVImportUtil {
                 budgets.add(budget);
             }
         } catch (Exception e) {
-            throw new RuntimeException("Error parsing budgets CSV", e);
+            // User-supplied file: report it as a bad request (400), not a server error
+            throw new IllegalArgumentException("Invalid budgets.csv: " + e.getMessage(), e);
         }
         return budgets;
     }
@@ -58,7 +60,7 @@ public class CSVImportUtil {
         List<Transaction> transactions = new ArrayList<>();
         try (CSVParser parser = CSVFormat.DEFAULT
                 .withFirstRecordAsHeader()
-                .parse(new InputStreamReader(inputStream))) {
+                .parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
 
             for (CSVRecord record : parser) {
                 Transaction txn = new Transaction();
@@ -74,7 +76,8 @@ public class CSVImportUtil {
                 transactions.add(txn);
             }
         } catch (Exception e) {
-            throw new RuntimeException("Error parsing transactions CSV", e);
+            // User-supplied file: report it as a bad request (400), not a server error
+            throw new IllegalArgumentException("Invalid transactions.csv: " + e.getMessage(), e);
         }
         return transactions;
     }
@@ -83,7 +86,7 @@ public class CSVImportUtil {
         List<UserSetting> settings = new ArrayList<>();
         try (CSVParser parser = CSVFormat.DEFAULT
                 .withFirstRecordAsHeader()
-                .parse(new InputStreamReader(inputStream))) {
+                .parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
 
             for (CSVRecord record : parser) {
                 UserSetting setting = UserSetting.builder()
@@ -95,7 +98,8 @@ public class CSVImportUtil {
                 settings.add(setting);
             }
         } catch (Exception e) {
-            throw new RuntimeException("Error parsing settings CSV", e);
+            // User-supplied file: report it as a bad request (400), not a server error
+            throw new IllegalArgumentException("Invalid settings.csv: " + e.getMessage(), e);
         }
         return settings;
     }

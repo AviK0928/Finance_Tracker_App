@@ -13,4 +13,6 @@ sealed class SettingsEvent {
     data class ImportData(val file: ByteArray, val filename: String) : SettingsEvent()
     data class PerformSync(val lastSync: LocalDateTime, val manual: Boolean) : SettingsEvent()
     object ClearError : SettingsEvent()
+    object ClearInfo : SettingsEvent()
+    data class ExportSaved(val saved: Boolean) : SettingsEvent()
 }

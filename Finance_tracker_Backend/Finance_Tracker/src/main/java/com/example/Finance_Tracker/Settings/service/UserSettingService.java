@@ -110,8 +110,8 @@ public class UserSettingService {
         return exportService.generateExportFilename();
     }
 
-    public void importDataForUser(MultipartFile file, Long userId) {
-        importService.importUserData(file, userId);
+    public ImportSummaryDTO importDataForUser(MultipartFile file, Long userId) {
+        return importService.importUserData(file, userId);
     }
 
     public List<UserSettingDTO> getAllSettingsForUser(Long userId) {

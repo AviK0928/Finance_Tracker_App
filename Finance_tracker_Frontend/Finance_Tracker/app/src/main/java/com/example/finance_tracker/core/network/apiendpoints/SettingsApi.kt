@@ -1,8 +1,10 @@
 package com.example.finance_tracker.core.network.apiendpoints
 
+import com.example.finance_tracker.core.network.model.settings.ImportSummaryDTO
 import com.example.finance_tracker.core.network.model.settings.UpdateSettingDTO
 import com.example.finance_tracker.core.network.model.settings.UserSettingDTO
 import okhttp3.MultipartBody
+import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -31,12 +33,13 @@ interface SettingsApi {
     @DELETE("/api/settings/delete-account")
     suspend fun deleteAccount(): Response<Unit>
 
+    // Raw ZIP bytes: ResponseBody is passed through by Retrofit; ByteArray would go through Gson and fail
     @GET("/api/settings/export-data")
-    suspend fun exportData(): Response<ByteArray>
+    suspend fun exportData(): Response<ResponseBody>
 
     @Multipart
     @POST("/api/settings/import-data")
     suspend fun importData(
         @Part file: MultipartBody.Part
-    ): Response<Unit>
+    ): Response<ImportSummaryDTO>
 }

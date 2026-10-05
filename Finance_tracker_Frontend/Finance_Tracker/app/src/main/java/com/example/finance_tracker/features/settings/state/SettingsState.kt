@@ -8,6 +8,10 @@ data class SettingsState(
     val settings: List<UserSettingDTO> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
+    val infoMessage: String? = null,
+
+    // Export ZIP waiting for the user to pick a save location; cleared once handled
+    val pendingExport: ByteArray? = null,
 
     // Sync-specific fields
     val syncMetadata: SyncMetadataDTO? = null,

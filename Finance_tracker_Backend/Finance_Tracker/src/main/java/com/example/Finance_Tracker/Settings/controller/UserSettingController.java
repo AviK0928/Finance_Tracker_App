@@ -2,6 +2,7 @@ package com.example.Finance_Tracker.Settings.controller;
 
 
 import com.example.Finance_Tracker.Security.JWTService;
+import com.example.Finance_Tracker.Settings.dto.ImportSummaryDTO;
 import com.example.Finance_Tracker.Settings.dto.UpdateSettingDTO;
 import com.example.Finance_Tracker.Settings.dto.UserSettingDTO;
 import com.example.Finance_Tracker.Settings.service.ImportService;
@@ -11,6 +12,7 @@ import com.example.Finance_Tracker.User.entity.BlacklistedToken;
 import com.example.Finance_Tracker.User.repository.BlacklistedTokenRepository;
 import com.example.Finance_Tracker.User.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
@@ -48,7 +50,7 @@ public class UserSettingController {
     }
 
     @PutMapping
-    public ResponseEntity<Void> updateSettings(@RequestBody List<UpdateSettingDTO> settings) {
+    public ResponseEntity<Void> updateSettings(@RequestBody List<@Valid UpdateSettingDTO> settings) {
         settingService.updateSettings(settings);
         return ResponseEntity.noContent().build();
     }
@@ -104,9 +106,8 @@ public class UserSettingController {
     }
 
     @PostMapping("/import-data")
-    public ResponseEntity<Void> importData(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<ImportSummaryDTO> importData(@RequestParam("file") MultipartFile file) {
         Long userId = SecurityUtils.getCurrentUserId();
-        settingService.importDataForUser(file, userId);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(settingService.importDataForUser(file, userId));
     }
 }
