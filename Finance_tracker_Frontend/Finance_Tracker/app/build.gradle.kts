@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("kotlin-kapt")
+    alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
 }
 
@@ -79,12 +79,12 @@ dependencies {
     implementation(libs.datastore)
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
-    kapt(libs.room.compiler)
+    ksp(libs.room.compiler)
 
     // Hilt
     implementation(libs.hilt)
     implementation(libs.dagger)
-    kapt(libs.kapt)
+    ksp(libs.hilt.compiler)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines)
