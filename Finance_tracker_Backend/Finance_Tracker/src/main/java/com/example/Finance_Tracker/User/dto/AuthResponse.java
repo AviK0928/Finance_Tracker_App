@@ -9,8 +9,9 @@ import lombok.Data;
 @AllArgsConstructor
 public class AuthResponse {
 
+    /** JWT access token; the Android client reads this field as {@code token}. */
     @NotBlank
-    private String message;
+    private String token;
 
     @NotBlank
     @Email

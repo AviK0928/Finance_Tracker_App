@@ -164,7 +164,7 @@ class TransactionViewModel @Inject constructor(
                 formCategory = txn.category,
                 formType = txn.type,
                 formDate = txn.transactionDate.toString(),
-                formDescription = txn.description,
+                formDescription = txn.description ?: "",
                 isEditing = true,
                 isFormVisible = true
             )

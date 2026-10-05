@@ -24,7 +24,7 @@ object RetrofitInstance {
         return Retrofit.Builder()
             .baseUrl(Constants.BASE_URL)
             .client(provideOkHttpClient(tokenManager))
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(GsonProvider.gson))
             .build()
     }
 

@@ -78,7 +78,7 @@ class UserServiceTest {
 
         AuthResponse response = userService.login(loginRequest(EMAIL, "Secret1!"));
 
-        assertThat(response.getMessage()).isEqualTo("jwt-token");
+        assertThat(response.getToken()).isEqualTo("jwt-token");
         assertThat(response.getEmail()).isEqualTo(EMAIL);
     }
 

@@ -5,7 +5,13 @@ import java.io.IOException
 
 object ApiResponseHandler {
 
-    suspend fun <T> handleApi(
+    /**
+     * Wraps a Retrofit call in a [NetworkResult].
+     *
+     * Inline + reified so it can tell `Response<Unit>` calls apart: a 204 No Content (every DELETE)
+     * has no body, which is a success for a `Unit` call but an error for a call that expects data.
+     */
+    suspend inline fun <reified T : Any> handleApi(
         apiCall: suspend () -> Response<T>
     ): NetworkResult<T> {
         return try {
@@ -13,10 +19,10 @@ object ApiResponseHandler {
 
             if (response.isSuccessful) {
                 val body = response.body()
-                if (body != null) {
-                    NetworkResult.Success(body)
-                } else {
-                    NetworkResult.Error(
+                when {
+                    body != null -> NetworkResult.Success(body)
+                    T::class == Unit::class -> NetworkResult.Success(Unit as T)
+                    else -> NetworkResult.Error(
                         message = "Empty response body",
                         code = response.code()
                     )

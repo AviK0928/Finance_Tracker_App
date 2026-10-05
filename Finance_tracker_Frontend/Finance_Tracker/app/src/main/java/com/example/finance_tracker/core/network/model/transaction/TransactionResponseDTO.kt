@@ -9,7 +9,7 @@ data class TransactionResponseDTO(
     val category: String,
     val type: TransactionType,
     val transactionDate: LocalDateTime,
-    val description: String,
+    val description: String?, // optional on the backend; null when not entered
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime
 )
