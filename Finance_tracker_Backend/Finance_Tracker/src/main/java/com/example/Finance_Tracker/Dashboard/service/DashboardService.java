@@ -45,8 +45,6 @@ public class DashboardService {
 
         BigDecimal totalIncome = BigDecimal.ZERO;
         BigDecimal totalExpense = BigDecimal.ZERO;
-        BigDecimal totalBudget = BigDecimal.ZERO;
-        BigDecimal remainingBudget = BigDecimal.ZERO;
 
         for (Transaction t : transactions) {
             if (t.getType() == TransactionType.INCOME) {
@@ -64,11 +62,6 @@ public class DashboardService {
                 .map(b -> BudgetResponseDTO.fromEntity(b, spendingCalculator.spentFor(b)))
                 .collect(Collectors.toList());
 
-        for (BudgetResponseDTO b : activeBudgetDTOs) {
-            totalBudget = totalBudget.add(b.getAmount());
-            remainingBudget = remainingBudget.add(b.getRemainingAmount());
-        }
-
         List<TransactionResponseDTO> recentTransactions = transactions.stream()
                 .sorted(Comparator.comparing(Transaction::getCreatedAt).reversed())
                 .limit(5)
@@ -82,8 +75,6 @@ public class DashboardService {
                 .build();
 
         BudgetInfo budget = BudgetInfo.builder()
-                .totalBudget(totalBudget)
-                .remainingBudget(remainingBudget)
                 .activeBudgets(activeBudgetDTOs)
                 .build();
 

@@ -87,7 +87,11 @@ class TransactionRepoImpl(
 
     override suspend fun exportFilteredTransactionsToPDF(
         filter: TransactionFilterDTO
-    ): NetworkResult<ByteArray> {
-        return ApiResponseHandler.handleApi { api.exportFilteredTransactionsToPDF(filter) }
+    ): NetworkResult<ByteArray> = withContext(Dispatchers.IO) {
+        when (val result = ApiResponseHandler.handleApi { api.exportFilteredTransactionsToPDF(filter) }) {
+            is NetworkResult.Success -> NetworkResult.Success(result.data.use { it.bytes() })
+            is NetworkResult.Error -> result
+            is NetworkResult.Loading -> NetworkResult.Loading
+        }
     }
 }

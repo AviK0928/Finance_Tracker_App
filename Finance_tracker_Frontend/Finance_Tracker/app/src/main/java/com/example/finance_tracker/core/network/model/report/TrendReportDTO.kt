@@ -1,8 +1,10 @@
 package com.example.finance_tracker.core.network.model.report
 
+import java.time.LocalDateTime
+
+// Mirrors backend Report/dto/TrendReportDTO: one entry per day that has transactions.
 data class TrendReportDTO(
-    val label: String, // e.g., "Jan 2025", "Apr", or "Week 1"
+    val date: LocalDateTime,
     val income: Double,
-    val expenses: Double,
-    val savings: Double
+    val expense: Double
 )

@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.awt.*;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Stream;
@@ -19,6 +20,48 @@ import java.util.stream.Stream;
 public class PDFGenerator {
 
     private static final Logger logger = LoggerFactory.getLogger(PDFGenerator.class);
+
+    /** Income and expense of a set of transactions, kept apart (adding them together means nothing). */
+    public record Totals(BigDecimal income, BigDecimal expense) {
+        public BigDecimal net() {
+            return income.subtract(expense);
+        }
+    }
+
+    public static Totals totalsOf(List<Transaction> transactions) {
+        BigDecimal income = BigDecimal.ZERO;
+        BigDecimal expense = BigDecimal.ZERO;
+        for (Transaction txn : transactions) {
+            if (txn.getAmount() == null || txn.getType() == null) {
+                continue;
+            }
+            if (txn.getType() == TransactionType.INCOME) {
+                income = income.add(txn.getAmount());
+            } else {
+                expense = expense.add(txn.getAmount());
+            }
+        }
+        return new Totals(income, expense);
+    }
+
+    private static void addTotalRow(PdfPTable table, String label, BigDecimal amount) {
+        Font font = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12, Color.WHITE);
+
+        PdfPCell labelCell = new PdfPCell(new Phrase(label, font));
+        labelCell.setColspan(3);
+        labelCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        labelCell.setBackgroundColor(Color.GRAY);
+        table.addCell(labelCell);
+
+        PdfPCell amountCell = new PdfPCell(new Phrase(amount.setScale(2, RoundingMode.HALF_UP).toPlainString(), font));
+        amountCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        amountCell.setBackgroundColor(Color.GRAY);
+        table.addCell(amountCell);
+
+        PdfPCell filler = new PdfPCell(new Phrase(""));
+        filler.setBackgroundColor(Color.GRAY);
+        table.addCell(filler);
+    }
 
     public static byte[] generateTransactionPDF(List<Transaction> transactions){
         Document doc = new Document(PageSize.A4);
@@ -49,8 +92,6 @@ public class PDFGenerator {
                 table.addCell(headerCell);
             });
 
-            BigDecimal totalAmount = BigDecimal.ZERO;
-
             for (Transaction txn : transactions) {
                 String dateStr = txn.getTransactionDate() != null ? txn.getTransactionDate().format(formatter) : "-";
                 table.addCell(dateStr);
@@ -58,28 +99,13 @@ public class PDFGenerator {
                 table.addCell(txn.getType() != null ? txn.getType().toString() : "-");
                 table.addCell(txn.getAmount() != null ? txn.getAmount().toPlainString() : "0.00");
                 table.addCell(txn.getDescription() != null ? txn.getDescription() : "-");
-
-                if (txn.getAmount() != null) {
-                    totalAmount = totalAmount.add(txn.getAmount());
-                }
             }
 
-            // Total row
-            PdfPCell totalLabelCell = new PdfPCell(new Phrase("Total", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12, Color.WHITE)));
-            totalLabelCell.setColspan(3);
-            totalLabelCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
-            totalLabelCell.setBackgroundColor(Color.GRAY);
-            table.addCell(totalLabelCell);
-
-            PdfPCell totalAmountCell = new PdfPCell(new Phrase(totalAmount.setScale(2, BigDecimal.ROUND_HALF_UP).toString(),
-                    FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12, Color.WHITE)));
-            totalAmountCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
-            totalAmountCell.setBackgroundColor(Color.GRAY);
-            table.addCell(totalAmountCell);
-
-            PdfPCell emptyCell = new PdfPCell(new Phrase(""));
-            emptyCell.setBackgroundColor(Color.GRAY);
-            table.addCell(emptyCell);
+            // Income and expense are totalled separately; one combined "Total" mixed them
+            Totals totals = totalsOf(transactions);
+            addTotalRow(table, "Total income", totals.income());
+            addTotalRow(table, "Total expense", totals.expense());
+            addTotalRow(table, "Net", totals.net());
 
             doc.add(table);
             doc.close();

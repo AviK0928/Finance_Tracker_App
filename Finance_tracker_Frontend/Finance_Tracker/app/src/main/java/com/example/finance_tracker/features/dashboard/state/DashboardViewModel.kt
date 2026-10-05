@@ -40,8 +40,6 @@ class DashboardViewModel @Inject constructor(
                             totalIncome = data.summary.totalIncome,
                             totalExpense = data.summary.totalExpense,
                             netSavings = data.summary.netSavings,
-                            totalBudget = data.budget.totalBudget,
-                            remainingBudget = data.budget.remainingBudget,
                             activeBudgets = data.budget.activeBudgets,
                             recentTransactions = data.transactions.recentTransactions,
                             isLoading = false,

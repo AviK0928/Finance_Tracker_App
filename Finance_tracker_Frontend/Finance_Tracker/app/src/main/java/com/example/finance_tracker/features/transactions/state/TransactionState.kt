@@ -12,6 +12,10 @@ data class TransactionState(
 
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
+    val infoMessage: String? = null,
+
+    // Exported PDF waiting for the user to pick a save location; cleared once handled
+    val pendingPdf: ByteArray? = null,
 
     // Pagination
     val currentPage: Int = 0,

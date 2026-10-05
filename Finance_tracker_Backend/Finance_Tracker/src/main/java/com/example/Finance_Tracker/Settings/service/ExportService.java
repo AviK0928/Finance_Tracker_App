@@ -5,10 +5,10 @@ import com.example.Finance_Tracker.Budget.repository.BudgetRepository;
 import com.example.Finance_Tracker.Settings.entity.UserSetting;
 import com.example.Finance_Tracker.Settings.repository.UserSettingRepository;
 import com.example.Finance_Tracker.Settings.util.CSVExportUtil;
-import com.example.Finance_Tracker.Settings.util.PDFExportUtil;
 import com.example.Finance_Tracker.Settings.util.ZipUtil;
 import com.example.Finance_Tracker.Transaction.entity.Transaction;
 import com.example.Finance_Tracker.Transaction.repository.TransactionRepository;
+import com.example.Finance_Tracker.Transaction.util.PDFGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -46,7 +46,7 @@ public class ExportService {
         files.put(ImportService.BUDGETS_CSV, CSVExportUtil.exportBudgetsToCSV(budgets));
         files.put(ImportService.TRANSACTIONS_CSV, CSVExportUtil.exportTransactionsToCSV(transactions));
         files.put(ImportService.SETTINGS_CSV, CSVExportUtil.exportSettingsToCSV(settings));
-        files.put("transaction_report.pdf", PDFExportUtil.generateTransactionPDF(transactions));
+        files.put("transaction_report.pdf", PDFGenerator.generateTransactionPDF(transactions));
 
         return ZipUtil.createZipFromFiles(files);
     }

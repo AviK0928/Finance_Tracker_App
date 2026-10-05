@@ -44,6 +44,10 @@ class TransactionViewModel @Inject constructor(
             is TransactionEvent.OnDescriptionChanged -> _state.update { it.copy(formDescription = event.desc) }
             is TransactionEvent.ExportToPDF -> exportToPDF()
             is TransactionEvent.ClearError -> _state.update { it.copy(errorMessage = null) }
+            is TransactionEvent.PdfSaved -> _state.update {
+                it.copy(pendingPdf = null, infoMessage = if (event.saved) "PDF saved" else null)
+            }
+            is TransactionEvent.ClearInfo -> _state.update { it.copy(infoMessage = null) }
         }
     }
 
@@ -69,31 +73,9 @@ class TransactionViewModel @Inject constructor(
                     }
                 }
                 is NetworkResult.Error -> {
-                    // Fallback to local transactions only on first page
-                    if (page == 0) {
-                        val local = transactionRepo.getLocalTransactions()
-                        _state.update {
-                            it.copy(
-                                transactions = local.map {
-                                    TransactionResponseDTO(
-                                        id = 99999999L,
-                                        userId = 99999999L,
-                                        amount = it.amount.toDouble(),
-                                        category = "NA",
-                                        type = TransactionType.EXPENSE,
-                                        transactionDate = it.updatedAt,
-                                        description = it.description ?: "NA",
-                                        createdAt = it.updatedAt,
-                                        updatedAt = it.updatedAt
-                                    )
-                                },
-                                isLoading = false,
-                                errorMessage = "Loaded from local: ${result.message}"
-                            )
-                        }
-                    } else {
-                        _state.update { it.copy(errorMessage = result.message, isLoading = false) }
-                    }
+                    // Online-first: show the error. The old offline fallback rendered Room rows as fake
+                    // transactions that all had id 99999999 (duplicate list keys crash the LazyColumn).
+                    _state.update { it.copy(errorMessage = result.message, isLoading = false) }
                 }
                 NetworkResult.Loading -> _state.update { it.copy(isLoading = true) }
             }
@@ -217,14 +199,7 @@ class TransactionViewModel @Inject constructor(
             val result = transactionRepo.exportFilteredTransactionsToPDF(_state.value.filter)
             when (result) {
                 is NetworkResult.Success -> {
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            // You can store PDF or trigger UI effects from here
-                            // exportedPdf = result.data (optional),
-                            // isExportSuccessful = true
-                        )
-                    }
+                    _state.update { it.copy(isLoading = false, pendingPdf = result.data) }
                 }
                 is NetworkResult.Error -> {
                     _state.update { it.copy(errorMessage = result.message, isLoading = false) }

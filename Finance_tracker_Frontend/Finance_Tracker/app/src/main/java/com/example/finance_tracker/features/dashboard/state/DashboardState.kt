@@ -11,8 +11,6 @@ data class DashboardState(
     val netSavings: BigDecimal = BigDecimal.ZERO,
 
     // Budget Info
-    val totalBudget: BigDecimal = BigDecimal.ZERO,
-    val remainingBudget: BigDecimal = BigDecimal.ZERO,
     val activeBudgets: List<BudgetResponseDTO> = emptyList(),
 
     // Transaction Info

@@ -14,9 +14,9 @@ fun MonthlyReportSection(state: ReportState) {
     val report = state.monthlyReport ?: return
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        ReportStatCard(label = "Income", value = report.income)
-        ReportStatCard(label = "Expenses", value = report.expenses)
-        ReportStatCard(label = "Savings", value = report.savings)
+        ReportStatCard(label = "Income", value = report.totalIncome)
+        ReportStatCard(label = "Expenses", value = report.totalExpense)
+        ReportStatCard(label = "Savings", value = report.netSavings)
     }
 }
 

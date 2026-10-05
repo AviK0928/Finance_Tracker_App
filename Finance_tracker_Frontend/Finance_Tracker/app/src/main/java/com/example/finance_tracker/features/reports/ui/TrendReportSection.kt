@@ -23,10 +23,10 @@ fun TrendReportSection(state: ReportState) {
         items(trends) { item ->
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(item.label, style = MaterialTheme.typography.titleMedium)
+                    Text(item.date.toLocalDate().toString(), style = MaterialTheme.typography.titleMedium)
                     Text("Income: ₹%.2f".format(item.income), style = MaterialTheme.typography.bodySmall)
-                    Text("Expenses: ₹%.2f".format(item.expenses), style = MaterialTheme.typography.bodySmall)
-                    Text("Savings: ₹%.2f".format(item.savings), style = MaterialTheme.typography.bodySmall)
+                    Text("Expenses: ₹%.2f".format(item.expense), style = MaterialTheme.typography.bodySmall)
+                    Text("Savings: ₹%.2f".format(item.income - item.expense), style = MaterialTheme.typography.bodySmall)
                 }
             }
         }

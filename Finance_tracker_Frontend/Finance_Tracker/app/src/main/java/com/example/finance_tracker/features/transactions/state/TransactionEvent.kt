@@ -23,5 +23,7 @@ sealed class TransactionEvent {
     data class OnDateChanged(val date: String) : TransactionEvent()
     data class OnDescriptionChanged(val desc: String) : TransactionEvent()
     object ExportToPDF : TransactionEvent()
+    data class PdfSaved(val saved: Boolean) : TransactionEvent()
+    object ClearInfo : TransactionEvent()
     object ClearError : TransactionEvent()
 }

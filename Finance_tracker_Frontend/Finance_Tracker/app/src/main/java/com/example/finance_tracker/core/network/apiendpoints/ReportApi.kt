@@ -11,7 +11,7 @@ interface ReportApi {
 
     @GET("/api/reports/monthly")
     suspend fun getMonthlyReport(
-        @Query("month") month: String, // Use uppercase short name (e.g., "JANUARY")
+        @Query("month") month: String, // java.time.Month name, e.g. "OCTOBER" (backend enum)
         @Query("year") year: Int
     ): Response<MonthlyReportDTO>
 
@@ -20,7 +20,7 @@ interface ReportApi {
 
     @GET("/api/reports/trend")
     suspend fun getTrendReport(
-        @Query("period") period: String = "6m" // e.g., "3m", "6m", "12m"
+        @Query("period") period: String = "6m" // "1m", "3m", "6m" or "1y" (anything else means 6m)
     ): Response<List<TrendReportDTO>>
 }
 

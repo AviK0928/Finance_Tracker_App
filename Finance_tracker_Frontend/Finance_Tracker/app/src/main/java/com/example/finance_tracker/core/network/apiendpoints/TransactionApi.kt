@@ -1,6 +1,7 @@
 package com.example.finance_tracker.core.network.apiendpoints
 
 import com.example.finance_tracker.core.network.model.transaction.*
+import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -51,8 +52,9 @@ interface TransactionApi {
         @Query("sort") sort: List<String> = listOf("transactionDate,desc")
     ): Response<PaginatedTransactionResponse>
 
+    // Raw PDF bytes: ResponseBody is passed through by Retrofit; ByteArray would go through Gson and fail
     @POST("/api/transactions/export/pdf")
     suspend fun exportFilteredTransactionsToPDF(
         @Body filter: TransactionFilterDTO
-    ): Response<ByteArray>
+    ): Response<ResponseBody>
 }

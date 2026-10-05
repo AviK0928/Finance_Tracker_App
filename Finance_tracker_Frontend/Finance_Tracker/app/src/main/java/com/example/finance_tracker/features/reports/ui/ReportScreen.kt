@@ -1,5 +1,6 @@
 package com.example.finance_tracker.features.reports.ui
 
+import java.time.LocalDate
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -25,8 +26,12 @@ fun ReportsScreen(viewModel: ReportViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
     var selectedTab by remember { mutableStateOf(ReportViewType.MONTHLY) }
 
+    // The backend takes the java.time.Month name ("OCTOBER"); "07" was rejected with 400
+    val today = LocalDate.now()
+    val loadThisMonth = { viewModel.onEvent(ReportEvent.LoadMonthlyReport(today.month.name, today.year)) }
+
     LaunchedEffect(Unit) {
-        viewModel.onEvent(ReportEvent.LoadMonthlyReport("07", 2025))
+        loadThisMonth()
     }
 
     Scaffold(
@@ -55,8 +60,7 @@ fun ReportsScreen(viewModel: ReportViewModel = hiltViewModel()) {
                         onClick = {
                             selectedTab = tab
                             when (tab) {
-                                ReportViewType.MONTHLY ->
-                                    viewModel.onEvent(ReportEvent.LoadMonthlyReport("07", 2025))
+                                ReportViewType.MONTHLY -> loadThisMonth()
                                 ReportViewType.CATEGORY ->
                                     viewModel.onEvent(ReportEvent.LoadCategoryReport)
                                 ReportViewType.TREND ->

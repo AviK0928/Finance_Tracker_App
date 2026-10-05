@@ -13,15 +13,16 @@ import com.example.finance_tracker.features.dashboard.state.DashboardState
 @Composable
 fun DashboardBudgetView(state: DashboardState) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        IconLabelRow(icon = R.drawable.ic_budgets, label = "Total Budget", value = "₹${state.totalBudget}")
-        IconLabelRow(icon = R.drawable.ic_remaining, label = "Remaining Budget", value = "₹${state.remainingBudget}")
-
+        // Per budget only: budgets can overlap, so a combined total would count one expense several times
         if (state.activeBudgets.isEmpty()) {
             EmptyState(message = "No active budgets found")
         } else {
-            Text("Active Budgets:")
             state.activeBudgets.forEach { budget ->
-                Text("- ${budget.name}: ₹${budget.amount}")
+                IconLabelRow(
+                    icon = R.drawable.ic_budgets,
+                    label = budget.name + (budget.category?.let { " ($it)" } ?: ""),
+                    value = "₹%.2f of ₹%.2f (%.0f%%)".format(budget.spentAmount, budget.amount, budget.percentageSpent)
+                )
             }
         }
     }

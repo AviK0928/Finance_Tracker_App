@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Data
@@ -14,7 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BudgetInfo {
-    private BigDecimal totalBudget;
-    private BigDecimal remainingBudget;
+    // No aggregate total/remaining: budgets can overlap (an all-categories budget and a Food budget both
+    // count the same expense), so a sum would subtract one expense several times. Each budget carries its own.
     private List<BudgetResponseDTO> activeBudgets;
 }
