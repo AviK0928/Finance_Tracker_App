@@ -4,7 +4,6 @@ import com.example.Finance_Tracker.Budget.dto.BudgetCreateDTO;
 import com.example.Finance_Tracker.Budget.dto.BudgetFilterDTO;
 import com.example.Finance_Tracker.Budget.dto.BudgetResponseDTO;
 import com.example.Finance_Tracker.Budget.dto.BudgetUpdateDTO;
-import com.example.Finance_Tracker.Budget.entity.Budget;
 import com.example.Finance_Tracker.Budget.service.BudgetService;
 import com.example.Finance_Tracker.Budget.util.BudgetFrequency;
 import com.example.Finance_Tracker.Budget.util.BudgetStatus;
@@ -67,7 +66,7 @@ public class BudgetController {
         filter.setFrequency(frequency);
 
         // userId will be set inside service via SecurityUtils
-        List<Budget> budgets = budgetService.getFilteredBudgets(filter);
+        List<BudgetResponseDTO> budgets = budgetService.getFilteredBudgets(filter);
         byte[] pdfBytes = PDFGenerator.generateBudgetPDF(budgets);
 
         HttpHeaders headers = new HttpHeaders();

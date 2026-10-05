@@ -138,3 +138,17 @@
 - **Gotcha (Flyway):** `V2` converted rows that already existed. `ALTER ... TYPE ... USING` needs an explicit conversion expression for float → numeric; the `ROUND(..., 2)` makes the precision loss explicit rather than implicit.
 - **Wire compatibility:** JSON numbers bind to `BigDecimal` on the server and to `Double` in the current Android DTOs, so the app keeps working unchanged; Android-side money types get aligned in the API-contract phase.
 - **Verified:** suite 33/33 (incl. `contextLoads` applying V2 on a DB with existing float rows); Flyway history `1:true 2:true`; column `numeric(19,2)`; `10.999` → 400; `10.50` → 201.
+
+## 2026-10-05 — Budgets track real spending (`feat/budget-spending`)
+
+- **Problem:** `budgets.spent_amount` was never written by any code path (only the CSV import set it). Every budget's spent/remaining/percentage, the dashboard's remaining budget and the budget PDF reported ₹0 spent forever. Budgets also had no category, so there was no way to link them to transactions.
+- **Fix:**
+  - `V3`: optional `budgets.category` (NULL = all expense categories), drop `spent_amount`, `CHECK (end_date >= start_date)`.
+  - `BudgetSpendingCalculator.spentFor(budget)`: `SUM(amount)` of the owner's EXPENSE transactions in `[startDate, endDate + 1 day)`, filtered by category (case-insensitive) when the budget has one.
+  - `BudgetResponseDTO.fromEntity(budget, spent)`; every consumer (budget API, dashboard, budget PDF) gets spending from the calculator. CSV export/import swaps `spentAmount` for `category`.
+  - DTOs: optional `category` (blank → null), `@AssertTrue isDateRangeValid()`.
+- **Design choice:** two repository queries (with/without category) instead of one JPQL `(:category IS NULL OR ...)`. Binding a null to an untyped `? IS NULL` parameter can fail on Postgres ("could not determine data type of parameter"), and two explicit queries are clearer anyway.
+- **Design choice:** compute on read instead of storing a running total. One indexed `SUM` per budget (index on `(user_id, transaction_date)`), always correct after edits/deletes, no drift. N+1 per budget list is acceptable at this scale; batch later if needed.
+- **Gotcha:** same scale issue as transactions: budget content hash now uses `amount.setScale(2).toPlainString()` and includes `category`.
+- **Testing:** `@DataJpaTest` + `@AutoConfigureTestDatabase(replace = NONE)` runs the real JPQL against the Flyway-migrated Postgres, in a rolled-back transaction. It covers date boundaries (first instant/last second in; day before/after out), case-insensitive category, income excluded, and the all-categories budget.
+- **Verified:** suite 38/38; Flyway `1,2,3` applied; live: Food budget 650.00 spent / 350.00 remaining / 65%, all-categories budget 2650.00 / 2350.00 / 53%, dashboard remaining 2700.00, end-before-start → 400, budget PDF → 200.

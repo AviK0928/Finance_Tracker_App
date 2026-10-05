@@ -1,6 +1,6 @@
 package com.example.Finance_Tracker.Budget.util;
 
-import com.example.Finance_Tracker.Budget.entity.Budget;
+import com.example.Finance_Tracker.Budget.dto.BudgetResponseDTO;
 import com.lowagie.text.*;
 import com.lowagie.text.Font;
 import com.lowagie.text.pdf.PdfPCell;
@@ -15,7 +15,7 @@ import java.util.stream.Stream;
 
 public class PDFGenerator {
 
-    public static byte[] generateBudgetPDF(List<Budget> budgets) {
+    public static byte[] generateBudgetPDF(List<BudgetResponseDTO> budgets) {
         Document doc = new Document(PageSize.A4);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
@@ -41,14 +41,14 @@ public class PDFGenerator {
                         table.addCell(cell);
                     });
 
-            for (Budget b : budgets) {
+            for (BudgetResponseDTO b : budgets) {
                 table.addCell(b.getName());
                 table.addCell(b.getStartDate().toString());
                 table.addCell(b.getEndDate().toString());
                 table.addCell(String.format("%.2f", b.getAmount()));
                 table.addCell(String.format("%.2f", b.getSpentAmount()));
                 table.addCell(String.format("%.2f", b.getRemainingAmount()));
-                table.addCell(b.getStatus().toString());
+                table.addCell(b.getBudgetStatus().toString());
             }
 
             doc.add(table);

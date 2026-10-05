@@ -12,6 +12,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -39,7 +40,8 @@ public class Budget {
     @NotNull(message = "Amount is required")
     private BigDecimal amount;
 
-    private BigDecimal spentAmount;
+    /** Optional. Null means the budget covers all expense categories. */
+    private String category;
 
     @NotNull(message = "Start date is required")
     private LocalDate startDate;
@@ -81,7 +83,6 @@ public class Budget {
         updatedAt = now;
         if (status == null) status = BudgetStatus.ACTIVE;
         if (frequency == null) frequency = BudgetFrequency.NONE;
-        if (spentAmount == null) spentAmount = BigDecimal.ZERO;
         if (lastNotifiedStage == null) lastNotifiedStage = BudgetUsageAlertStage.NONE;
         expiryNotificationSent = false;
         nearingExpiryNotificationSent = false;
@@ -94,13 +95,10 @@ public class Budget {
         contentHash = computeHash();
     }
 
-    public BigDecimal getRemainingAmount() {
-        if (amount == null) return BigDecimal.ZERO;
-        return spentAmount == null ? amount : amount.subtract(spentAmount);
-    }
-
     private String computeHash() {
-        String rawData = name + amount + startDate + endDate + frequency + status + notes;
+        // setScale(2) so 1000 and 1000.00 hash identically (the DB always returns scale 2)
+        String normalizedAmount = amount != null ? amount.setScale(2, RoundingMode.HALF_UP).toPlainString() : "null";
+        String rawData = name + normalizedAmount + category + startDate + endDate + frequency + status + notes;
         return sha256(rawData);
     }
 

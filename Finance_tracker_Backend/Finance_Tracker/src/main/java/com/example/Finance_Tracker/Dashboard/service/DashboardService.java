@@ -2,6 +2,7 @@ package com.example.Finance_Tracker.Dashboard.service;
 
 import com.example.Finance_Tracker.Budget.entity.Budget;
 import com.example.Finance_Tracker.Budget.repository.BudgetRepository;
+import com.example.Finance_Tracker.Budget.service.BudgetSpendingCalculator;
 import com.example.Finance_Tracker.Budget.util.BudgetStatus;
 import com.example.Finance_Tracker.Budget.dto.BudgetResponseDTO;
 import com.example.Finance_Tracker.Dashboard.dto.BudgetInfo;
@@ -30,6 +31,9 @@ public class DashboardService {
     @Autowired
     private BudgetRepository budgetRepository;
 
+    @Autowired
+    private BudgetSpendingCalculator spendingCalculator;
+
     public DashboardSummaryDTO getDashboardSummary() {
         Long currentUserId = SecurityUtils.getCurrentUserId();
         if (currentUserId == null) {
@@ -56,23 +60,19 @@ public class DashboardService {
                 .filter(b -> b.getStatus() == BudgetStatus.ACTIVE)
                 .toList();
 
-        for (Budget b : activeBudgets) {
+        List<BudgetResponseDTO> activeBudgetDTOs = activeBudgets.stream()
+                .map(b -> BudgetResponseDTO.fromEntity(b, spendingCalculator.spentFor(b)))
+                .collect(Collectors.toList());
+
+        for (BudgetResponseDTO b : activeBudgetDTOs) {
             totalBudget = totalBudget.add(b.getAmount());
-            if (b.getSpentAmount() != null) {
-                remainingBudget = remainingBudget.add(b.getRemainingAmount());
-            } else {
-                remainingBudget = remainingBudget.add(b.getAmount());
-            }
+            remainingBudget = remainingBudget.add(b.getRemainingAmount());
         }
 
         List<TransactionResponseDTO> recentTransactions = transactions.stream()
                 .sorted(Comparator.comparing(Transaction::getCreatedAt).reversed())
                 .limit(5)
                 .map(TransactionResponseDTO::fromEntity)
-                .collect(Collectors.toList());
-
-        List<BudgetResponseDTO> activeBudgetDTOs = activeBudgets.stream()
-                .map(BudgetResponseDTO::fromEntity)
                 .collect(Collectors.toList());
 
         SummaryInfo summary = SummaryInfo.builder()

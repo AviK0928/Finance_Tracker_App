@@ -17,7 +17,7 @@ public class CSVExportUtil {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream();
              CSVPrinter printer = new CSVPrinter(new OutputStreamWriter(out, StandardCharsets.UTF_8),
                      CSVFormat.DEFAULT.withHeader(
-                             "id", "userId", "name", "amount", "spentAmount", "startDate", "endDate",
+                             "id", "userId", "name", "amount", "category", "startDate", "endDate",
                              "createdAt", "updatedAt", "frequency", "status", "notes",
                              "lastNotifiedStage", "expiryNotificationSent", "nearingExpiryNotificationSent", "contentHash"))) {
 
@@ -27,7 +27,7 @@ public class CSVExportUtil {
                         b.getUserId(),
                         b.getName(),
                         b.getAmount(),
-                        b.getSpentAmount(),
+                        b.getCategory(),
                         b.getStartDate(),
                         b.getEndDate(),
                         b.getCreatedAt(),

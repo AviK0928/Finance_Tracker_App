@@ -19,6 +19,7 @@ public class BudgetResponseDTO {
     private Long id;
     private Long userId;
     private String name;
+    private String category;
     private BigDecimal amount;
     private BigDecimal spentAmount;
     private BigDecimal remainingAmount;
@@ -31,9 +32,9 @@ public class BudgetResponseDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public static BudgetResponseDTO fromEntity(Budget budget) {
+    /** @param spent amount spent so far, computed by {@code BudgetSpendingCalculator} */
+    public static BudgetResponseDTO fromEntity(Budget budget, BigDecimal spent) {
         BigDecimal amount = budget.getAmount();
-        BigDecimal spent = budget.getSpentAmount() != null ? budget.getSpentAmount() : BigDecimal.ZERO;
         BigDecimal remaining = amount.subtract(spent);
 
         double percent = 0.0;
@@ -48,6 +49,7 @@ public class BudgetResponseDTO {
                 .id(budget.getId())
                 .userId(budget.getUserId()) // ✅ Corrected
                 .name(budget.getName())
+                .category(budget.getCategory())
                 .amount(amount)
                 .spentAmount(spent)
                 .remainingAmount(remaining)

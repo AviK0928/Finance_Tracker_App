@@ -33,6 +33,18 @@ public class BudgetService {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private BudgetSpendingCalculator spendingCalculator;
+
+    /** Trims the category; blank means "all categories" (stored as null). */
+    private static String normalizeCategory(String category) {
+        return (category == null || category.isBlank()) ? null : category.trim();
+    }
+
+    private BudgetResponseDTO toResponse(Budget budget) {
+        return BudgetResponseDTO.fromEntity(budget, spendingCalculator.spentFor(budget));
+    }
+
     public BudgetResponseDTO createBudget(BudgetCreateDTO dto) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
         if (currentUserId == null) {
@@ -42,6 +54,7 @@ public class BudgetService {
         Budget budget = Budget.builder()
                 .userId(currentUserId) // always assign current user
                 .name(dto.getName())
+                .category(normalizeCategory(dto.getCategory()))
                 .amount(dto.getAmount())
                 .startDate(dto.getStartDate())
                 .endDate(dto.getEndDate())
@@ -50,12 +63,14 @@ public class BudgetService {
                 .build();
 
         budget = budgetRepository.save(budget);
-        return BudgetResponseDTO.fromEntity(budget);
+        return toResponse(budget);
     }
 
-    public List<Budget> getFilteredBudgets(BudgetFilterDTO filter) {
+    public List<BudgetResponseDTO> getFilteredBudgets(BudgetFilterDTO filter) {
         Specification<Budget> spec = new BudgetSpecification(filter);
-        return budgetRepository.findAll(spec);
+        return budgetRepository.findAll(spec).stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
     }
 
     public BudgetResponseDTO updateBudget(Long budgetId, BudgetUpdateDTO dto) {
@@ -72,6 +87,7 @@ public class BudgetService {
         }
 
         budget.setName(dto.getName());
+        budget.setCategory(normalizeCategory(dto.getCategory()));
         budget.setAmount(dto.getAmount());
         budget.setStartDate(dto.getStartDate());
         budget.setEndDate(dto.getEndDate());
@@ -81,7 +97,7 @@ public class BudgetService {
 
         budget = budgetRepository.save(budget);
 
-        BigDecimal spent = budget.getSpentAmount();
+        BigDecimal spent = spendingCalculator.spentFor(budget);
         BigDecimal total = budget.getAmount();
 
         if (spent != null && total != null) {
@@ -130,7 +146,7 @@ public class BudgetService {
             budget = budgetRepository.save(budget); // persist lastNotifiedStage changes
         }
 
-        return BudgetResponseDTO.fromEntity(budget);
+        return BudgetResponseDTO.fromEntity(budget, spent);
     }
 
     public void deleteBudget(Long budgetId) {
@@ -162,7 +178,7 @@ public class BudgetService {
             throw new UnauthorizedBudgetAccessException("You do not have permission to view this budget.");
         }
 
-        return BudgetResponseDTO.fromEntity(budget);
+        return toResponse(budget);
     }
 
     public List<BudgetResponseDTO> getBudgetsByUser() {
@@ -173,7 +189,7 @@ public class BudgetService {
 
         List<Budget> budgets = budgetRepository.findByUserId(currentUserId);
         return budgets.stream()
-                .map(BudgetResponseDTO::fromEntity)
+                .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 }
