@@ -37,11 +37,8 @@ fun NavGraphBuilder.mainGraph(navActions: NavigationActions) {
 
     composable(Route.SETTINGS) {
         MainScaffold(currentRoute = Route.SETTINGS, onNavigate = navActions::navigateTo) {
-            SettingsScreen(
-                onLogoutOrDelete = {
-                    navActions.clearBackStackAndNavigate(Route.AUTH)
-                }
-            )
+            // Logout and account deletion clear the token; AppNavGraph then shows the login screen
+            SettingsScreen()
         }
     }
 

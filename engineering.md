@@ -288,3 +288,15 @@
 - **Found for 7b (not changed here):** the backend returns 401 both for an invalid or expired JWT and for a wrong login password, so session-expiry handling must ignore `/api/auth/**`. `SettingsViewModel.logout()` clears tokens only when the server call succeeds, so with an expired token the user cannot log out. The nav graph always starts at `auth` and ignores a stored token. Tokens are saved twice on login (`AuthRepoImpl` and `AuthViewModel`).
 - **Testing:** `NetworkModuleTest`: the Retrofit uses the given client and `Constants.BASE_URL`.
 - **Verified:** Android 25/25 and `assembleDebug`; no `RetrofitInstance` references remain.
+
+## 2026-10-05 — Session follows the stored token (`fix/android-session`)
+
+- **Problem 1:** the nav graph always started at `auth`, so a stored token was never used and every app start asked for a login.
+- **Problem 2:** an expired or blacklisted token left the user on screens that only showed errors; nothing reacted to 401.
+- **Problem 3 (trap):** `SettingsViewModel.logout()` cleared tokens only when `POST /api/settings/logout` succeeded. With an expired token that call is 401, so the user could not log out at all. Fix: `SettingsRepoImpl.logout()` clears locally whatever the server answers (the server blacklist is best effort).
+- **Discovery:** the backend answers 401 for two different things: a rejected token (blacklist in `JWTAuthenticationFilter`; expired, garbage or deleted user via `HttpStatusEntryPoint`) and a wrong password on `/api/auth/login` (`InvalidCredentialsException`). Rule in `AuthInterceptor.endsSession`: 401 ends the session only outside `/api/auth/`; 403 never does.
+- **Design decision:** state instead of events. The stored token is the single source of truth: `SessionViewModel.isLoggedIn` maps `TokenManager.authTokens`; `AppNavGraph` picks the start destination from it (fixed with `remember`, a NavHost start destination must not change) and goes to login whenever it turns false. Login, logout, account deletion and a 401 all just change the token, so one code path handles them; a state value cannot be missed the way an event can when nobody is collecting. The `onLogoutOrDelete` callback that `SettingsScreen` injected into its ViewModel was removed.
+- **Race:** a 401 from a request sent before a re-login must not log the new session out. `TokenManager.clearTokensIfCurrent(token)` compares and removes inside one `dataStore.edit`, which is atomic, so parallel 401s also clear only once.
+- **Cleanup:** the login token was saved twice (`AuthRepoImpl` and `AuthViewModel`); the ViewModel copy was removed.
+- **Testing:** `AuthInterceptorTest` (401 on an API path ends the session, 401 on `/api/auth/login` does not, 403 does not). Navigation and the DataStore compare-and-clear are compile-checked only (no emulator).
+- **Verified:** Android 28/28 and `assembleDebug`; live: token 200, wrong password 401, garbage token 401, logout 204, same token after logout 401.

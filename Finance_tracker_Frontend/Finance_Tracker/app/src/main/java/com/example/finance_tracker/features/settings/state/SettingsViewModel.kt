@@ -2,7 +2,6 @@ package com.example.finance_tracker.features.settings.state
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.finance_tracker.core.data.local.preferences.TokenManager
 import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.core.network.model.settings.ImportSummaryDTO
 import com.example.finance_tracker.core.network.model.settings.UpdateSettingDTO
@@ -20,14 +19,11 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsRepo: SettingsRepo,
-    private val syncRepo: SyncRepo,
-    private val tokenManager: TokenManager
+    private val syncRepo: SyncRepo
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SettingsState())
     val state: StateFlow<SettingsState> = _state
-
-    var onLogoutOrDelete: (() -> Unit)? = null
 
     fun onEvent(event: SettingsEvent) {
         when (event) {
@@ -83,17 +79,10 @@ class SettingsViewModel @Inject constructor(
     private fun logout() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
-            when (val result = settingsRepo.logout()) {
-                is NetworkResult.Success -> {
-                    tokenManager.clearTokens()
-                    _state.update { it.copy(isLoading = false) }
-                    onLogoutOrDelete?.invoke()
-                }
-                is NetworkResult.Error -> {
-                    _state.update { it.copy(errorMessage = result.message, isLoading = false) }
-                }
-                else -> Unit
-            }
+            // The repository clears the local session whatever the server answers; AppNavGraph sees
+            // the token disappear and shows the login screen.
+            settingsRepo.logout()
+            _state.update { it.copy(isLoading = false) }
         }
     }
 
@@ -102,9 +91,8 @@ class SettingsViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true) }
             when (val result = settingsRepo.deleteAccount()) {
                 is NetworkResult.Success -> {
-                    tokenManager.clearTokens()
+                    // The repository cleared the token; AppNavGraph shows the login screen
                     _state.update { it.copy(isLoading = false) }
-                    onLogoutOrDelete?.invoke()
                 }
                 is NetworkResult.Error -> {
                     _state.update { it.copy(errorMessage = result.message, isLoading = false) }

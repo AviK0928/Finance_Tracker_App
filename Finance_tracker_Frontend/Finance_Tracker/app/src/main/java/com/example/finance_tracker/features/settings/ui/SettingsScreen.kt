@@ -22,8 +22,7 @@ import java.time.LocalDate
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    viewModel: SettingsViewModel = hiltViewModel(),
-    onLogoutOrDelete: () -> Unit
+    viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
@@ -70,7 +69,6 @@ fun SettingsScreen(
     }
 
     LaunchedEffect(Unit) {
-        viewModel.onLogoutOrDelete = onLogoutOrDelete
         viewModel.onEvent(SettingsEvent.LoadSettings)
     }
 

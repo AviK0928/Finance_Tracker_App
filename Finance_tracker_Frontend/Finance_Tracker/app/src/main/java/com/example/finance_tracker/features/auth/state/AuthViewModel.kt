@@ -2,8 +2,6 @@ package com.example.finance_tracker.features.auth.state
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.finance_tracker.core.data.local.preferences.TokenManager
-import com.example.finance_tracker.core.data.model.AuthTokens
 import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.core.network.model.auth.ForgotPasswordRequestDTO
 import com.example.finance_tracker.core.network.model.auth.LoginRequestDTO
@@ -19,8 +17,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val repository: AuthRepo,
-    private val tokenManager: TokenManager
+    private val repository: AuthRepo
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
@@ -71,14 +68,7 @@ class AuthViewModel @Inject constructor(
 
             when (result) {
                 is NetworkResult.Success -> {
-                    viewModelScope.launch {
-                        tokenManager.saveTokens(
-                            AuthTokens(
-                                accessToken = result.data.token,
-                                refreshToken = result.data.token
-                            )
-                        )
-                    }
+                    // AuthRepoImpl has already saved the token
                     _state.update { it.copy(isLoading = false, isAuthSuccessful = true) }
                 }
                 is NetworkResult.Error -> {

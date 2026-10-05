@@ -39,6 +39,19 @@ class TokenManager @Inject constructor(
         }
     }
 
+    /**
+     * Clears the session only if [accessToken] is still the stored token. One DataStore edit, so it is
+     * atomic: a late 401 from a request sent before a re-login cannot log the new session out.
+     */
+    suspend fun clearTokensIfCurrent(accessToken: String) {
+        context.dataStore.edit {
+            if (it[ACCESS_TOKEN] == accessToken) {
+                it.remove(ACCESS_TOKEN)
+                it.remove(REFRESH_TOKEN)
+            }
+        }
+    }
+
     /** Returns the stored access token, or null when the user is not logged in. */
     suspend fun getAccessToken(): String? {
         return context.dataStore.data.first()[ACCESS_TOKEN]

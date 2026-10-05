@@ -53,13 +53,11 @@ class SettingsRepoImpl(
     }
 
     override suspend fun logout(): NetworkResult<Unit> {
-        return ApiResponseHandler.handleApi {
-            val response = api.logout()
-            if (response.isSuccessful) {
-                tokenManager.clearTokens()
-            }
-            response
-        }
+        val result = ApiResponseHandler.handleApi { api.logout() }
+        // Log out locally even when the server call fails (expired token, offline); otherwise the
+        // user is stuck logged in. The server-side blacklist is best effort.
+        tokenManager.clearTokens()
+        return result
     }
 
     override suspend fun deleteAccount(): NetworkResult<Unit> {
