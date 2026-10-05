@@ -102,7 +102,7 @@ class AuthViewModel @Inject constructor(
                         it.copy(
                             isLoading = false,
                             forgotPasswordSuccess = true,
-                            forgotResetMessage = result.data
+                            forgotResetMessage = result.data.message
                         )
                     }
                 }
@@ -129,7 +129,7 @@ class AuthViewModel @Inject constructor(
                         it.copy(
                             isLoading = false,
                             resetPasswordSuccess = true,
-                            forgotResetMessage = result.data
+                            forgotResetMessage = result.data.message
                         )
                     }
                 }

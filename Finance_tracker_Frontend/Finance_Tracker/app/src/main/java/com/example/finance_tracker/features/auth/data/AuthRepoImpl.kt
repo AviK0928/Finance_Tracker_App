@@ -10,6 +10,7 @@ import com.example.finance_tracker.core.data.model.AuthTokens
 import com.example.finance_tracker.core.network.ApiResponseHandler
 import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.core.network.model.auth.ForgotPasswordRequestDTO
+import com.example.finance_tracker.core.network.model.auth.MessageResponseDTO
 import com.example.finance_tracker.core.network.model.auth.ResetPasswordRequestDTO
 import com.example.finance_tracker.features.auth.domain.AuthRepo
 
@@ -35,11 +36,11 @@ class AuthRepoImpl(
         return response
     }
 
-    override suspend fun forgotPassword(request: ForgotPasswordRequestDTO): NetworkResult<String> {
+    override suspend fun forgotPassword(request: ForgotPasswordRequestDTO): NetworkResult<MessageResponseDTO> {
         return ApiResponseHandler.handleApi { authApi.forgotPassword(request) }
     }
 
-    override suspend fun resetPassword(request: ResetPasswordRequestDTO): NetworkResult<String> {
+    override suspend fun resetPassword(request: ResetPasswordRequestDTO): NetworkResult<MessageResponseDTO> {
         return ApiResponseHandler.handleApi { authApi.resetPassword(request) }
     }
 }

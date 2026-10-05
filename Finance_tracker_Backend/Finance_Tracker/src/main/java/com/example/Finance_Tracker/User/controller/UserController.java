@@ -2,6 +2,7 @@ package com.example.Finance_Tracker.User.controller;
 
 import com.example.Finance_Tracker.User.dto.AuthResponse;
 import com.example.Finance_Tracker.User.dto.ForgotPasswordRequest;
+import com.example.Finance_Tracker.User.dto.MessageResponse;
 import com.example.Finance_Tracker.User.dto.ResetPasswordRequest;
 import com.example.Finance_Tracker.User.dto.LoginRequest;
 import com.example.Finance_Tracker.User.dto.RegisterRequest;
@@ -35,15 +36,15 @@ public class UserController {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+    public ResponseEntity<MessageResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         userService.initiateForgotPassword(request);
-        return ResponseEntity.ok("If the email exists, a password reset link has been sent.");
+        return ResponseEntity.ok(new MessageResponse("If the email exists, a password reset link has been sent."));
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<MessageResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         userService.resetPassword(request.getToken(), request.getNewPassword());
-        return ResponseEntity.ok("Password has been successfully reset.");
+        return ResponseEntity.ok(new MessageResponse("Password has been successfully reset."));
     }
 
 }
