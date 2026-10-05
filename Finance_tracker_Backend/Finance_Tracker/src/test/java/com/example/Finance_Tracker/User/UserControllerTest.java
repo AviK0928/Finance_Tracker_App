@@ -48,7 +48,7 @@ class UserControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.message").value("If the email exists, a password reset link has been sent."));
+                .andExpect(jsonPath("$.message").value("If the email exists, a password reset code has been sent."));
 
         verify(userService).initiateForgotPassword(any());
     }

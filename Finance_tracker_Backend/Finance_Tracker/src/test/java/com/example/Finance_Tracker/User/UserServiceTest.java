@@ -22,6 +22,9 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -60,6 +63,16 @@ class UserServiceTest {
     }
 
     @Test
+    void login_unknownEmail_stillRunsAPasswordCheck() {
+        // Without it an unknown email answers much faster than a wrong password (timing side channel)
+        when(userRepository.findByEmail("nobody@example.com")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.login(loginRequest("nobody@example.com", "Secret1!")))
+                .isInstanceOf(InvalidCredentialsException.class);
+        verify(passwordEncoder).matches(eq("Secret1!"), any());
+    }
+
+    @Test
     void login_wrongPassword_throwsSameExceptionAsUnknownEmail() {
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(existingUser()));
         when(passwordEncoder.matches("wrong", "stored-hash")).thenReturn(false);
@@ -90,5 +103,18 @@ class UserServiceTest {
 
         assertThatCode(() -> userService.initiateForgotPassword(request)).doesNotThrowAnyException();
         verifyNoInteractions(passwordResetService, emailService);
+    }
+
+    @Test
+    void forgotPassword_knownEmail_emailsTheResetCode() {
+        User user = existingUser();
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+        when(passwordResetService.generateResetToken(user)).thenReturn("tok-123");
+        ForgotPasswordRequest request = new ForgotPasswordRequest();
+        request.setEmail(EMAIL);
+
+        userService.initiateForgotPassword(request);
+
+        verify(emailService).sendResetPasswordEmail(EMAIL, "user", "tok-123");
     }
 }

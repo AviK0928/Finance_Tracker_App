@@ -38,7 +38,7 @@ public class UserController {
     @PostMapping("/forgot-password")
     public ResponseEntity<MessageResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         userService.initiateForgotPassword(request);
-        return ResponseEntity.ok(new MessageResponse("If the email exists, a password reset link has been sent."));
+        return ResponseEntity.ok(new MessageResponse("If the email exists, a password reset code has been sent."));
     }
 
     @PostMapping("/reset-password")

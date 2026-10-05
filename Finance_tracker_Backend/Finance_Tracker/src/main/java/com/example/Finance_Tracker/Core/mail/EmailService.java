@@ -5,6 +5,7 @@ import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.UnsupportedEncodingException;
@@ -16,16 +17,22 @@ public class EmailService {
     private final JavaMailSender mailSender;
     private final MailProperties mailProperties;
 
-    public void sendResetPasswordEmail(String to, String username, String resetLink) {
+    /**
+     * Asynchronous so the forgot-password response does not depend on SMTP (timing or failure).
+     * A failure is logged by Spring's async exception handler; the token itself is never logged.
+     * The app has no web page or deep link for resets: the user pastes this code into the app.
+     */
+    @Async
+    public void sendResetPasswordEmail(String to, String username, String resetToken) {
         String subject = "Reset your Quantro password";
         String html = """
                 <p>Hello %s,</p>
-                <p>You requested a password reset. Click below:</p>
-                <p><a href="%s">Reset Password</a></p>
-                <p>This link is valid for 15 minutes.</p>
+                <p>You requested a password reset. Enter this code in the app:</p>
+                <p><strong>%s</strong></p>
+                <p>This code is valid for 15 minutes.</p>
                 <p>If you didn’t request this, you can ignore it.</p>
                 <p>— %s Team</p>
-                """.formatted(username, resetLink, mailProperties.getFromName());
+                """.formatted(username, resetToken, mailProperties.getFromName());
 
         sendEmail(to, subject, html);
     }

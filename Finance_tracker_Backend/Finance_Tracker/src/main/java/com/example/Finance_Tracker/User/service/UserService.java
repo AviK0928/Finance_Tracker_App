@@ -18,6 +18,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -32,6 +33,9 @@ public class UserService {
     private PasswordResetService passwordResetService;
     @Autowired
     private EmailService emailService;
+
+    /** BCrypt hash of a random password, compared against when the email is unknown (see login). */
+    private String dummyHash;
 
     public AuthResponse register(RegisterRequest request){
         if (userRepository.findByEmail(request.getEmail()).isPresent()){
@@ -51,15 +55,27 @@ public class UserService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        // Same exception and message for "unknown email" and "wrong password",
-        // so the response doesn't reveal which emails have accounts.
-        User user = userRepository.findByEmail(request.getEmail())
-                .filter(u -> passwordEncoder.matches(request.getPassword(), u.getPassword()))
+        // Same exception and message for "unknown email" and "wrong password", so the response doesn't
+        // reveal which emails have accounts. An unknown email is still checked against a dummy hash:
+        // BCrypt dominates the response time, so skipping it would reveal the same thing through timing.
+        Optional<User> maybeUser = userRepository.findByEmail(request.getEmail());
+        String hash = maybeUser.map(User::getPassword).orElseGet(this::dummyHash);
+        boolean passwordMatches = passwordEncoder.matches(request.getPassword(), hash);
+        User user = maybeUser.filter(u -> passwordMatches)
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
 
         String token = jwtService.generateToken(user.getEmail());
         return new AuthResponse(token, user.getEmail());
     }
+
+    /** Created on first use with the configured encoder, so its cost always matches real hashes. */
+    private String dummyHash() {
+        if (dummyHash == null) {
+            dummyHash = passwordEncoder.encode(UUID.randomUUID().toString());
+        }
+        return dummyHash;
+    }
+
     public void resetPassword(String token, String newPassword) {
         PasswordResetToken resetToken = passwordResetService.validateToken(token);
         if (resetToken == null) {
@@ -84,8 +100,9 @@ public class UserService {
         User user = maybeUser.get();
 
         String token = passwordResetService.generateResetToken(user);
-        String resetLink = "https://yourfrontend.com/reset-password?token=" + token;
 
-        emailService.sendResetPasswordEmail(user.getEmail(), user.getUsername(), resetLink);
+        // Sent asynchronously (EmailService is @Async): a known email must answer exactly like an
+        // unknown one, without waiting for SMTP and without a mail failure turning into a 500.
+        emailService.sendResetPasswordEmail(user.getEmail(), user.getUsername(), token);
     }
 }
