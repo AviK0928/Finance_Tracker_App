@@ -1,7 +1,6 @@
 package com.example.Finance_Tracker.Notification.service;
 
 import com.example.Finance_Tracker.Core.exception.ResourceNotFoundException;
-import com.example.Finance_Tracker.Core.websockets.NotificationWebSocketPublisher;
 import com.example.Finance_Tracker.Notification.dto.CreateNotificationDTO;
 import com.example.Finance_Tracker.Security.SecurityUtils;
 import com.example.Finance_Tracker.Notification.dto.NotificationDTO;
@@ -25,8 +24,6 @@ public class NotificationService {
 
     @Autowired
     private NotificationRepository notificationRepository;
-    @Autowired
-    private NotificationWebSocketPublisher notificationWebSocketPublisher;
     @Autowired
     private UserSettingService userSettingService;
 
@@ -149,12 +146,7 @@ public class NotificationService {
                 .referenceId(dto.getReferenceId())
                 .archived(false)
                 .build();
-        Notification saved = notificationRepository.save(notification);
-
-        NotificationDTO notificationDTO = NotificationMapper.toDTO(saved);
-        notificationWebSocketPublisher.sendNotification(userId, notificationDTO);
-
-        return saved;
+        return notificationRepository.save(notification);
     }
 
     private boolean isWanted(Long userId, SettingKey preference) {

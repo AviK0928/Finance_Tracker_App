@@ -1,7 +1,6 @@
 package com.example.Finance_Tracker.Notification;
 
 import com.example.Finance_Tracker.Core.exception.ResourceNotFoundException;
-import com.example.Finance_Tracker.Core.websockets.NotificationWebSocketPublisher;
 import com.example.Finance_Tracker.Notification.dto.CreateNotificationDTO;
 import com.example.Finance_Tracker.Notification.dto.NotificationDTO;
 import com.example.Finance_Tracker.Notification.entity.Notification;
@@ -28,7 +27,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -41,7 +39,6 @@ class NotificationServiceTest {
     private static final long NOTIFICATION_ID = 10L;
 
     @Mock private NotificationRepository notificationRepository;
-    @Mock private NotificationWebSocketPublisher notificationWebSocketPublisher;
     @Mock private UserSettingService userSettingService;
 
     @InjectMocks private NotificationService notificationService;
@@ -139,7 +136,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    void createNotificationForUser_whenEnabled_savesAndPublishes() {
+    void createNotificationForUser_whenEnabled_saves() {
         when(userSettingService.getBooleanForUser(OTHER_USER_ID, SettingKey.NOTIFICATIONS_ENABLED)).thenReturn(true);
         when(userSettingService.getBooleanForUser(OTHER_USER_ID, SettingKey.NOTIFY_SPENDING_ALERTS)).thenReturn(true);
         when(notificationRepository.save(any(Notification.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -149,11 +146,10 @@ class NotificationServiceTest {
 
         assertThat(saved).isNotNull();
         assertThat(saved.getUserId()).isEqualTo(OTHER_USER_ID);
-        verify(notificationWebSocketPublisher).sendNotification(eq(OTHER_USER_ID), any());
     }
 
     @Test
-    void createNotificationForUser_mutedByPreference_savesAndPublishesNothing() {
+    void createNotificationForUser_mutedByPreference_savesNothing() {
         when(userSettingService.getBooleanForUser(OTHER_USER_ID, SettingKey.NOTIFICATIONS_ENABLED)).thenReturn(true);
         when(userSettingService.getBooleanForUser(OTHER_USER_ID, SettingKey.NOTIFY_SPENDING_ALERTS)).thenReturn(false);
 
@@ -162,7 +158,6 @@ class NotificationServiceTest {
 
         assertThat(saved).isNull();
         verify(notificationRepository, never()).save(any());
-        verify(notificationWebSocketPublisher, never()).sendNotification(any(), any());
     }
 
     @Test

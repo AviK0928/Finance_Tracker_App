@@ -20,9 +20,7 @@ import com.example.finance_tracker.features.budgets.domain.BudgetRepo
 import com.example.finance_tracker.features.dashboard.data.DashboardRepoImpl
 import com.example.finance_tracker.features.dashboard.domain.DashboardRepo
 import com.example.finance_tracker.features.notification.data.NotificationRepoImpl
-import com.example.finance_tracker.features.notification.data.NotificationWebSocketManagerImpl
 import com.example.finance_tracker.features.notification.domain.NotificationRepo
-import com.example.finance_tracker.features.notification.domain.NotificationWebSocketManager
 import com.example.finance_tracker.features.reports.data.ReportRepoImpl
 import com.example.finance_tracker.features.reports.domain.ReportRepo
 import com.example.finance_tracker.features.settings.data.SettingsRepoImpl
@@ -66,11 +64,6 @@ object AppModule {
     fun provideNotificationRepo(
         notificationApi: NotificationApi
     ): NotificationRepo = NotificationRepoImpl(notificationApi)
-
-    @Provides
-    @Singleton
-    fun provideNotificationWebSocketManager(): NotificationWebSocketManager =
-        NotificationWebSocketManagerImpl()
 
     @Provides
     @Singleton

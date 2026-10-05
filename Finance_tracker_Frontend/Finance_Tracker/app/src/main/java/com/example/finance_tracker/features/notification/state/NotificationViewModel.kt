@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.features.notification.domain.NotificationRepo
-import com.example.finance_tracker.features.notification.domain.NotificationWebSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,29 +13,14 @@ import javax.inject.Inject
 
 @HiltViewModel
 class NotificationViewModel @Inject constructor(
-    private val repo: NotificationRepo,
-    private val socketManager: NotificationWebSocketManager
+    private val repo: NotificationRepo
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(NotificationState())
     val state: StateFlow<NotificationState> = _state
 
     init {
-        observePush()
         loadAll()
-    }
-
-    private fun observePush() {
-        viewModelScope.launch {
-            socketManager.newNotifications.collect { incoming ->
-                _state.update {
-                    it.copy(
-                        notifications = listOf(incoming) + it.notifications,
-                        unreadCount = it.unreadCount + 1
-                    )
-                }
-            }
-        }
     }
 
     fun onEvent(event: NotificationEvent) {
@@ -210,10 +194,5 @@ class NotificationViewModel @Inject constructor(
 
     private fun clearSelection() {
         _state.update { it.copy(selectedNotifications = emptySet()) }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        socketManager.stop()
     }
 }
