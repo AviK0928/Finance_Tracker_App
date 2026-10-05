@@ -75,3 +75,40 @@
 ### Gotchas
 - **Bash history expansion:** a password like `Wrong1!x` inside double quotes triggers `event not found`, and the request is never sent. Use `set +H` or single quotes.
 - **Shell variables don't survive between terminals/runs.** An empty `$EMAIL` made the "wrong password" check hit bean validation (`Email can not be blank`) instead. Verification blocks should be self-contained.
+
+## 2026-10-05 — Global error handling & notification ownership (`fix/error-handling`)
+
+### Error handling
+- **Problem:** three copy-pasted, package-scoped `@RestControllerAdvice` classes (Budget, Transaction, User); the other modules had none.
+  - Each had a catch-all `@ExceptionHandler(Exception.class)` that swallowed Spring's own MVC exceptions (malformed JSON → 500) and returned raw `ex.getMessage()` to clients.
+  - `AccessDeniedException` from `TransactionService` became 500 instead of 403.
+  - `Map.of(...)` throws a `NullPointerException` when a message is `null`, so the error handler itself could crash.
+- **Fix:** one `GlobalExceptionHandler extends ResponseEntityExceptionHandler`. Spring's standard MVC exceptions (bad JSON, type mismatch, missing params, 405, unknown path) keep correct status codes and are reshaped via `handleExceptionInternal`. Domain exceptions are mapped explicitly: 401/403/404/409/400. Everything else → 500 with a generic message, full stack trace logged server-side only.
+- **Design choice:** a custom `ApiError {timestamp, status, error, message, path, fieldErrors?}` instead of Spring's `ProblemDetail`. The Android client's `ErrorUtils` reads `message`; `ProblemDetail` calls it `detail`, and switching would silently break the app's error display. Validation errors now carry a readable `message` (the client previously showed "Unknown error").
+- **Gotcha:** some Spring exceptions (e.g. `HttpRequestMethodNotSupportedException` → 405) reach `handleExceptionInternal` with a `null` body; their `ProblemDetail` lives on the exception (`ErrorResponse.getBody()`). Without falling back to it, the 405 message degraded to a generic text.
+- **Verified (live, curl):**
+
+  | Case | Before | After |
+  |---|---|---|
+  | Another user's transaction | 500 | 403 |
+  | Bad sort field | 500 | 400 |
+  | Invalid reset token | 500 | 400 |
+  | Malformed JSON | 500 | 400 |
+  | Registration validation | bare field map | 400 with `message` + `fieldErrors` |
+
+### Notification ownership
+- **Problem:**
+  - `markAsRead` loaded by id with **no owner check**: any user could mark any user's notifications.
+  - `delete`/`archive` signalled "not found"/"not yours" with `IllegalArgumentException`/`IllegalStateException`, which surfaced as 500.
+  - `POST /api/notifications` let clients create arbitrary notifications.
+- **Fix:** private `getOwnedNotification(id)` (missing → `ResourceNotFoundException` 404; other owner → `AccessDeniedException` 403) used by all single-notification operations; create endpoint removed (the server creates notifications internally; the Android app never called it).
+- **Verified (live):** Bob marking Alice's notification → 403 (was 200 and succeeded); missing id → 404; `POST /api/notifications` → 405; Alice on her own → 200.
+
+### Tests
+- `GlobalExceptionHandlerTest` (9): standalone MockMvc with a throwaway controller. Asserts status codes, body shape, and that internal messages (`secret_table`, ownership detail) never reach the client.
+- `NotificationServiceTest` (5): ownership rules, including that `save`/`delete` are never called for a foreign notification.
+- Unit suite: 22 tests.
+
+### Known gaps (later units)
+- Archived notifications are still returned by `GET /api/notifications`.
+- `BudgetNotificationScheduler` calls `createNotification`, which needs a logged-in user, so it fails on the scheduler thread.

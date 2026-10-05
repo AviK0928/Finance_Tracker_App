@@ -1,5 +1,6 @@
 package com.example.Finance_Tracker.Notification.service;
 
+import com.example.Finance_Tracker.Core.exception.ResourceNotFoundException;
 import com.example.Finance_Tracker.Core.websockets.NotificationWebSocketPublisher;
 import com.example.Finance_Tracker.Notification.dto.CreateNotificationDTO;
 import com.example.Finance_Tracker.Security.SecurityUtils;
@@ -9,6 +10,7 @@ import com.example.Finance_Tracker.Notification.mapper.NotificationMapper;
 import com.example.Finance_Tracker.Notification.repository.NotificationRepository;
 import com.example.Finance_Tracker.Notification.util.NotificationType;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -61,10 +63,9 @@ public class NotificationService {
     }
 
     public void markAsRead(Long notificationId) {
-        notificationRepository.findById(notificationId).ifPresent(notification -> {
-            notification.setRead(true);
-            notificationRepository.save(notification);
-        });
+        Notification notification = getOwnedNotification(notificationId);
+        notification.setRead(true);
+        notificationRepository.save(notification);
     }
 
     public void markAllAsRead() {
@@ -88,26 +89,12 @@ public class NotificationService {
     }
 
     public void deleteNotification(Long id) {
-        Long userId = SecurityUtils.getCurrentUserId();
-        Notification notification = notificationRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Notification not found"));
-
-        if (!notification.getUserId().equals(userId)) {
-            throw new IllegalStateException("Unauthorized access");
-        }
-
+        Notification notification = getOwnedNotification(id);
         notificationRepository.delete(notification);
     }
 
     public void archiveNotification(Long id) {
-        Long userId = SecurityUtils.getCurrentUserId();
-        Notification notification = notificationRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Notification not found"));
-
-        if (!notification.getUserId().equals(userId)) {
-            throw new IllegalStateException("Unauthorized access");
-        }
-
+        Notification notification = getOwnedNotification(id);
         notification.setArchived(true);
         notificationRepository.save(notification);
     }
@@ -132,6 +119,20 @@ public class NotificationService {
                 .toList();
 
         notificationRepository.deleteAll(notifications);
+    }
+
+    /**
+     * Loads a notification and verifies it belongs to the current user.
+     * 404 if it doesn't exist, 403 if it belongs to someone else.
+     */
+    private Notification getOwnedNotification(Long id) {
+        Notification notification = notificationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + id));
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        if (!notification.getUserId().equals(currentUserId)) {
+            throw new AccessDeniedException("Notification " + id + " does not belong to the current user");
+        }
+        return notification;
     }
 
     public boolean existsByTitleAndDateAndUserId(String title, Long userId, LocalDate date) {

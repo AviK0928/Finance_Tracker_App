@@ -1,6 +1,5 @@
 package com.example.Finance_Tracker.Notification.controller;
 
-import com.example.Finance_Tracker.Notification.dto.CreateNotificationDTO;
 import com.example.Finance_Tracker.Notification.dto.NotificationDTO;
 import com.example.Finance_Tracker.Notification.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,12 +18,6 @@ public class NotificationController {
     @GetMapping
     public ResponseEntity<List<NotificationDTO>> getUserNotifications() {
         return ResponseEntity.ok(notificationService.getNotificationsByUser());
-    }
-
-    @PostMapping
-    public ResponseEntity<Void> createNotification(@RequestBody CreateNotificationDTO dto) {
-        notificationService.createNotification(dto);
-        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/{id}/mark-as-read")
