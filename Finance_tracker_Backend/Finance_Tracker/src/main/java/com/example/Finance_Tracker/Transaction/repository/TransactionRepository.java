@@ -20,6 +20,19 @@ import java.util.List;
 public interface TransactionRepository extends JpaRepository<Transaction, Long>,
         JpaSpecificationExecutor<Transaction> {
         List<Transaction> findByUserId(Long userId);
+
+        /** The user's newest transactions (dashboard), without loading the rest. */
+        List<Transaction> findTop5ByUserIdOrderByCreatedAtDesc(Long userId);
+
+        /** One row of {@link #sumAmountByType}. */
+        interface TypeTotal {
+                TransactionType getTransactionType();
+                BigDecimal getTotal();
+        }
+
+        /** All-time totals per type for one user (dashboard), computed in the database. */
+        @Query("SELECT t.type AS transactionType, SUM(t.amount) AS total FROM Transaction t WHERE t.userId = :userId GROUP BY t.type")
+        List<TypeTotal> sumAmountByType(@Param("userId") Long userId);
         Page<Transaction> findAll(Specification<Transaction> spec, Pageable pageable);
         List<Transaction> findByUserIdAndTransactionDateBetween(Long userId, LocalDateTime start, LocalDateTime end);
         List<Transaction> findAllByUserIdAndUpdatedAtAfter(Long userId, LocalDateTime lastSync);

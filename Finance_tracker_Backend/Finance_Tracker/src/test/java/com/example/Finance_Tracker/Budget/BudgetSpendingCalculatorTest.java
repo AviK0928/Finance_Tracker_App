@@ -1,7 +1,10 @@
 package com.example.Finance_Tracker.Budget;
 
 import com.example.Finance_Tracker.Budget.entity.Budget;
+import com.example.Finance_Tracker.Budget.repository.BudgetRepository;
 import com.example.Finance_Tracker.Budget.service.BudgetSpendingCalculator;
+import com.example.Finance_Tracker.Budget.util.BudgetFrequency;
+import com.example.Finance_Tracker.Budget.util.BudgetStatus;
 import com.example.Finance_Tracker.Transaction.entity.Transaction;
 import com.example.Finance_Tracker.Transaction.repository.TransactionRepository;
 import com.example.Finance_Tracker.Transaction.util.TransactionType;
@@ -17,11 +20,14 @@ import org.springframework.context.annotation.Import;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Runs the real JPQL SUM queries against the dev Postgres (Flyway-migrated schema).
+ * Runs the real SUM queries (the per-budget JPQL ones and the native batch query) against the dev
+ * Postgres (Flyway-migrated schema).
  * Each test runs in a transaction that is rolled back, so no data is left behind.
  */
 @DataJpaTest
@@ -32,17 +38,16 @@ class BudgetSpendingCalculatorTest {
     @Autowired private TransactionRepository transactionRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private BudgetSpendingCalculator calculator;
+    @Autowired private BudgetRepository budgetRepository;
 
     private Long userId;
 
     @BeforeEach
     void createUserWithOctoberTransactions() {
-        User user = User.builder()
-                .email("spending-" + System.nanoTime() + "@example.com")
-                .username("spending")
-                .password("not-a-real-hash")
-                .build();
-        userId = userRepository.save(user).getId();
+        userId = newUser();
+
+        // Another user's expense in the same category and month must never count
+        saveFor(newUser(), TransactionType.EXPENSE, "Food", "999.00", LocalDateTime.of(2026, 10, 10, 12, 0));
 
         // Inside October 2026
         save(TransactionType.EXPENSE, "Food", "0.10", LocalDateTime.of(2026, 10, 1, 0, 0));       // first instant
@@ -56,9 +61,21 @@ class BudgetSpendingCalculatorTest {
         save(TransactionType.EXPENSE, "Food", "100.00", LocalDateTime.of(2026, 11, 1, 0, 0));
     }
 
+    private Long newUser() {
+        return userRepository.save(User.builder()
+                .email("spending-" + System.nanoTime() + "@example.com")
+                .username("spending")
+                .password("not-a-real-hash")
+                .build()).getId();
+    }
+
     private void save(TransactionType type, String category, String amount, LocalDateTime date) {
+        saveFor(userId, type, category, amount, date);
+    }
+
+    private void saveFor(Long owner, TransactionType type, String category, String amount, LocalDateTime date) {
         Transaction transaction = new Transaction();
-        transaction.setUserId(userId);
+        transaction.setUserId(owner);
         transaction.setType(type);
         transaction.setCategory(category);
         transaction.setAmount(new BigDecimal(amount));
@@ -90,5 +107,30 @@ class BudgetSpendingCalculatorTest {
     @Test
     void budgetWithNoMatchingTransactions_isZero() {
         assertThat(calculator.spentFor(octoberBudget("Travel"))).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void spentForAll_givesTheSameAmountsAsSpentFor_inOneQuery() {
+        Budget food = saveBudget(octoberBudget("FOOD"));
+        Budget all = saveBudget(octoberBudget(null));
+        Budget travel = saveBudget(octoberBudget("Travel"));
+
+        Map<Long, BigDecimal> spent = calculator.spentForAll(List.of(food, all, travel));
+
+        assertThat(spent).hasSize(3);
+        assertThat(spent.get(food.getId())).isEqualByComparingTo(calculator.spentFor(food)).isEqualByComparingTo("5.30");
+        assertThat(spent.get(all.getId())).isEqualByComparingTo(calculator.spentFor(all)).isEqualByComparingTo("1005.30");
+        assertThat(spent.get(travel.getId())).isEqualByComparingTo(calculator.spentFor(travel)).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void spentForAll_withNoBudgets_isEmpty() {
+        assertThat(calculator.spentForAll(List.of())).isEmpty();
+    }
+
+    private Budget saveBudget(Budget budget) {
+        budget.setFrequency(BudgetFrequency.MONTHLY);
+        budget.setStatus(BudgetStatus.ACTIVE);
+        return budgetRepository.save(budget);
     }
 }

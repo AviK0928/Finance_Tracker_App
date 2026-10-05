@@ -15,7 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -62,11 +64,17 @@ public class BudgetService {
         return toResponse(budget);
     }
 
+    /** Lists: spending of all budgets in one query instead of one per budget. */
+    private List<BudgetResponseDTO> toResponses(List<Budget> budgets) {
+        Map<Long, BigDecimal> spent = spendingCalculator.spentForAll(budgets);
+        return budgets.stream()
+                .map(b -> BudgetResponseDTO.fromEntity(b, spent.getOrDefault(b.getId(), BigDecimal.ZERO)))
+                .collect(Collectors.toList());
+    }
+
     public List<BudgetResponseDTO> getFilteredBudgets(BudgetFilterDTO filter) {
         Specification<Budget> spec = new BudgetSpecification(filter);
-        return budgetRepository.findAll(spec).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return toResponses(budgetRepository.findAll(spec));
     }
 
     public BudgetResponseDTO updateBudget(Long budgetId, BudgetUpdateDTO dto) {
@@ -140,9 +148,6 @@ public class BudgetService {
             throw new IllegalStateException("User not authenticated");
         }
 
-        List<Budget> budgets = budgetRepository.findByUserId(currentUserId);
-        return budgets.stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return toResponses(budgetRepository.findByUserId(currentUserId));
     }
 }
