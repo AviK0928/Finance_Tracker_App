@@ -5,7 +5,6 @@ import com.example.finance_tracker.core.data.local.room.dao.UserSettingDao
 import com.example.finance_tracker.core.data.local.room.mapper.UserSettingMapper
 import com.example.finance_tracker.core.network.ApiResponseHandler
 import com.example.finance_tracker.core.network.NetworkResult
-import com.example.finance_tracker.core.network.RetrofitInstance
 import com.example.finance_tracker.core.network.apiendpoints.SettingsApi
 import com.example.finance_tracker.core.network.model.settings.ImportSummaryDTO
 import com.example.finance_tracker.core.network.model.settings.UpdateSettingDTO
@@ -18,11 +17,10 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 
 class SettingsRepoImpl(
+    private val api: SettingsApi,
     private val tokenManager: TokenManager,
     private val userSettingDao: UserSettingDao
 ) : SettingsRepo {
-
-    private val api: SettingsApi = RetrofitInstance.provideSettingsApi(tokenManager)
 
     override suspend fun getSettings(): NetworkResult<List<UserSettingDTO>> {
         return withContext(Dispatchers.IO) {

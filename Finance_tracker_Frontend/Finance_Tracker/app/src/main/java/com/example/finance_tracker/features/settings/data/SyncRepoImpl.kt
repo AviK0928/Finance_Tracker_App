@@ -1,6 +1,5 @@
 package com.example.finance_tracker.features.settings.data
 
-import com.example.finance_tracker.core.data.local.preferences.TokenManager
 import com.example.finance_tracker.core.data.local.room.dao.BudgetDao
 import com.example.finance_tracker.core.data.local.room.dao.SyncMetadataDao
 import com.example.finance_tracker.core.data.local.room.dao.TransactionDao
@@ -11,21 +10,18 @@ import com.example.finance_tracker.core.data.local.room.mapper.TransactionMapper
 import com.example.finance_tracker.core.data.local.room.mapper.UserSettingMapper
 import com.example.finance_tracker.core.network.ApiResponseHandler
 import com.example.finance_tracker.core.network.NetworkResult
-import com.example.finance_tracker.core.network.RetrofitInstance
 import com.example.finance_tracker.core.network.apiendpoints.SyncApi
 import com.example.finance_tracker.core.network.model.sync.SyncRequestDTO
 import com.example.finance_tracker.core.network.model.sync.SyncResponseDTO
 import com.example.finance_tracker.features.settings.domain.SyncRepo
 
 class SyncRepoImpl(
-    tokenManager: TokenManager,
+    private val api: SyncApi,
     private val budgetDao: BudgetDao,
     private val transactionDao: TransactionDao,
     private val userSettingDao: UserSettingDao,
     private val syncMetadataDao: SyncMetadataDao
 ) : SyncRepo {
-
-    private val api: SyncApi = RetrofitInstance.provideSyncApi(tokenManager)
 
     override suspend fun syncData(request: SyncRequestDTO): NetworkResult<SyncResponseDTO> {
         val result = ApiResponseHandler.handleApi { api.syncData(request) }

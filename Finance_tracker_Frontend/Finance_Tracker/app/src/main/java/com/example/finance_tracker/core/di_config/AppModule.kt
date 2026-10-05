@@ -5,6 +5,14 @@ import com.example.finance_tracker.core.data.local.room.dao.BudgetDao
 import com.example.finance_tracker.core.data.local.room.dao.SyncMetadataDao
 import com.example.finance_tracker.core.data.local.room.dao.TransactionDao
 import com.example.finance_tracker.core.data.local.room.dao.UserSettingDao
+import com.example.finance_tracker.core.network.apiendpoints.AuthApi
+import com.example.finance_tracker.core.network.apiendpoints.BudgetApi
+import com.example.finance_tracker.core.network.apiendpoints.DashboardApi
+import com.example.finance_tracker.core.network.apiendpoints.NotificationApi
+import com.example.finance_tracker.core.network.apiendpoints.ReportApi
+import com.example.finance_tracker.core.network.apiendpoints.SettingsApi
+import com.example.finance_tracker.core.network.apiendpoints.SyncApi
+import com.example.finance_tracker.core.network.apiendpoints.TransactionApi
 import com.example.finance_tracker.features.auth.data.AuthRepoImpl
 import com.example.finance_tracker.features.auth.domain.AuthRepo
 import com.example.finance_tracker.features.budgets.data.BudgetRepoImpl
@@ -32,31 +40,32 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
-    // Bindings will be added here (e.g., TokenManager, UserPreferences, Network, DB, etc.)
+    // Repositories. Network singletons (OkHttp, Retrofit, APIs) come from NetworkModule.
     @Provides
     @Singleton
     fun provideAuthRepo(
+        authApi: AuthApi,
         tokenManager: TokenManager
-    ): AuthRepo = AuthRepoImpl(tokenManager)
+    ): AuthRepo = AuthRepoImpl(authApi, tokenManager)
 
     @Provides
     @Singleton
     fun provideBudgetRepo(
-        tokenManager: TokenManager,
+        budgetApi: BudgetApi,
         budgetDao: BudgetDao
-    ): BudgetRepo = BudgetRepoImpl(tokenManager, budgetDao)
+    ): BudgetRepo = BudgetRepoImpl(budgetApi, budgetDao)
 
     @Provides
     @Singleton
     fun provideDashboardRepo(
-        tokenManager: TokenManager
-    ): DashboardRepo = DashboardRepoImpl(tokenManager)
+        dashboardApi: DashboardApi
+    ): DashboardRepo = DashboardRepoImpl(dashboardApi)
 
     @Provides
     @Singleton
     fun provideNotificationRepo(
-        tokenManager: TokenManager
-    ): NotificationRepo = NotificationRepoImpl(tokenManager)
+        notificationApi: NotificationApi
+    ): NotificationRepo = NotificationRepoImpl(notificationApi)
 
     @Provides
     @Singleton
@@ -66,26 +75,27 @@ object AppModule {
     @Provides
     @Singleton
     fun provideReportRepo(
-        tokenManager: TokenManager
-    ): ReportRepo = ReportRepoImpl(tokenManager)
+        reportApi: ReportApi
+    ): ReportRepo = ReportRepoImpl(reportApi)
 
     @Provides
     @Singleton
     fun provideSettingsRepo(
+        settingsApi: SettingsApi,
         tokenManager: TokenManager,
         userSettingDao: UserSettingDao
-    ): SettingsRepo = SettingsRepoImpl(tokenManager, userSettingDao)
+    ): SettingsRepo = SettingsRepoImpl(settingsApi, tokenManager, userSettingDao)
 
     @Provides
     @Singleton
     fun provideSyncRepo(
-        tokenManager: TokenManager,
+        syncApi: SyncApi,
         budgetDao: BudgetDao,
         transactionDao: TransactionDao,
         userSettingDao: UserSettingDao,
         syncMetadataDao: SyncMetadataDao
     ): SyncRepo = SyncRepoImpl(
-        tokenManager,
+        syncApi,
         budgetDao,
         transactionDao,
         userSettingDao,
@@ -95,8 +105,8 @@ object AppModule {
     @Provides
     @Singleton
     fun provideTransactionRepo(
-        tokenManager: TokenManager,
+        transactionApi: TransactionApi,
         transactionDao: TransactionDao
-    ): TransactionRepo = TransactionRepoImpl(tokenManager, transactionDao)
+    ): TransactionRepo = TransactionRepoImpl(transactionApi, transactionDao)
 
 }

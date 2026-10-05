@@ -1,22 +1,19 @@
 package com.example.finance_tracker.core.network
 
+import com.example.finance_tracker.core.di_config.NetworkModule
 import com.example.finance_tracker.core.network.model.auth.MessageResponseDTO
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import java.lang.reflect.Type
 
 class AuthContractTest {
 
-    // Same converter setup as RetrofitInstance
-    private val retrofit = Retrofit.Builder()
-        .baseUrl("http://localhost/")
-        .addConverterFactory(GsonConverterFactory.create(GsonProvider.gson))
-        .build()
+    // The app's own Retrofit setup, so the test cannot drift from it
+    private val retrofit = NetworkModule.provideRetrofit(OkHttpClient())
 
     private fun <T> convert(type: Type, body: String, mediaType: String): T? {
         val converter = retrofit.responseBodyConverter<T>(type, emptyArray())

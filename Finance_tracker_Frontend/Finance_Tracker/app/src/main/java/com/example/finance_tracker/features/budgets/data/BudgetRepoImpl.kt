@@ -1,10 +1,8 @@
 package com.example.finance_tracker.features.budgets.data
 
-import com.example.finance_tracker.core.data.local.preferences.TokenManager
 import com.example.finance_tracker.core.data.local.room.dao.BudgetDao
 import com.example.finance_tracker.core.network.ApiResponseHandler
 import com.example.finance_tracker.core.network.NetworkResult
-import com.example.finance_tracker.core.network.RetrofitInstance
 import com.example.finance_tracker.core.network.apiendpoints.BudgetApi
 import com.example.finance_tracker.core.network.model.budget.*
 import com.example.finance_tracker.core.network.model.sync.BudgetDTO
@@ -15,11 +13,9 @@ import javax.inject.Inject
 
 
 class BudgetRepoImpl @Inject constructor(
-    tokenManager: TokenManager,
+    private val api: BudgetApi,
     private val budgetDao: BudgetDao
 ) : BudgetRepo {
-
-    private val api: BudgetApi = RetrofitInstance.provideBudgetApi(tokenManager)
 
     override suspend fun createBudget(dto: BudgetCreateDTO): NetworkResult<BudgetResponseDTO> {
         return ApiResponseHandler.handleApi { api.createBudget(dto) }

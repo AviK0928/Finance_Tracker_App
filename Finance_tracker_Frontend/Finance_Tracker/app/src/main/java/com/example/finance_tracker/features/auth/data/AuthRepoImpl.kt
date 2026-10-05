@@ -1,6 +1,5 @@
 package com.example.finance_tracker.features.auth.data
 
-import com.example.finance_tracker.core.network.RetrofitInstance
 import com.example.finance_tracker.core.network.apiendpoints.AuthApi
 import com.example.finance_tracker.core.network.model.auth.AuthResponseDTO
 import com.example.finance_tracker.core.network.model.auth.LoginRequestDTO
@@ -15,10 +14,9 @@ import com.example.finance_tracker.core.network.model.auth.ResetPasswordRequestD
 import com.example.finance_tracker.features.auth.domain.AuthRepo
 
 class AuthRepoImpl(
+    private val authApi: AuthApi,
     private val tokenManager: TokenManager
 ) : AuthRepo {
-
-    private val authApi: AuthApi = RetrofitInstance.provideAuthApi(tokenManager)
 
     override suspend fun register(request: RegisterRequestDTO): NetworkResult<AuthResponseDTO> {
         val response = ApiResponseHandler.handleApi { authApi.registerUser(request) }

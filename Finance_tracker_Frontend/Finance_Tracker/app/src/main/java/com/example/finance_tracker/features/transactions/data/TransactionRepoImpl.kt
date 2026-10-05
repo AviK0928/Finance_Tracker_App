@@ -1,11 +1,9 @@
 package com.example.finance_tracker.features.transactions.data
 
-import com.example.finance_tracker.core.data.local.preferences.TokenManager
 import com.example.finance_tracker.core.data.local.room.dao.TransactionDao
 import com.example.finance_tracker.core.data.local.room.entity.TransactionEntity
 import com.example.finance_tracker.core.network.ApiResponseHandler
 import com.example.finance_tracker.core.network.NetworkResult
-import com.example.finance_tracker.core.network.RetrofitInstance
 import com.example.finance_tracker.core.network.apiendpoints.TransactionApi
 import com.example.finance_tracker.core.network.model.sync.TransactionDTO
 import com.example.finance_tracker.core.network.model.transaction.*
@@ -14,11 +12,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class TransactionRepoImpl(
-    tokenManager: TokenManager,
+    private val api: TransactionApi,
     private val transactionDao: TransactionDao
 ) : TransactionRepo {
-
-    private val api: TransactionApi = RetrofitInstance.provideTransactionApi(tokenManager)
 
     override suspend fun createTransaction(dto: TransactionCreateDTO): NetworkResult<TransactionResponseDTO> {
         return ApiResponseHandler.handleApi { api.createTransaction(dto) }

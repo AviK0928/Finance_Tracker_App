@@ -1,18 +1,14 @@
 package com.example.finance_tracker.features.notification.data
 
-import com.example.finance_tracker.core.data.local.preferences.TokenManager
 import com.example.finance_tracker.core.network.ApiResponseHandler
 import com.example.finance_tracker.core.network.NetworkResult
-import com.example.finance_tracker.core.network.RetrofitInstance
 import com.example.finance_tracker.core.network.apiendpoints.NotificationApi
 import com.example.finance_tracker.core.network.model.notification.NotificationDTO
 import com.example.finance_tracker.features.notification.domain.NotificationRepo
 
 class NotificationRepoImpl(
-    tokenManager: TokenManager
+    private val api: NotificationApi
 ) : NotificationRepo {
-
-    private val api: NotificationApi = RetrofitInstance.provideNotificationApi(tokenManager)
 
     override suspend fun getNotifications(): NetworkResult<List<NotificationDTO>> {
         return ApiResponseHandler.handleApi { api.getNotifications() }
