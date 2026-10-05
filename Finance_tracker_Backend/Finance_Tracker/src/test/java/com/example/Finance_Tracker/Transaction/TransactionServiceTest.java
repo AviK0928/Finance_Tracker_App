@@ -5,6 +5,7 @@ import com.example.Finance_Tracker.Notification.dto.CreateNotificationDTO;
 import com.example.Finance_Tracker.Notification.service.NotificationService;
 import com.example.Finance_Tracker.Settings.util.SettingKey;
 import com.example.Finance_Tracker.Transaction.dto.TransactionCreateDTO;
+import com.example.Finance_Tracker.Transaction.dto.TransactionUpdateDTO;
 import com.example.Finance_Tracker.Transaction.entity.Transaction;
 import com.example.Finance_Tracker.Transaction.repository.TransactionRepository;
 import com.example.Finance_Tracker.Transaction.service.TransactionService;
@@ -24,6 +25,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -49,11 +51,14 @@ class TransactionServiceTest {
     @InjectMocks private TransactionService transactionService;
 
     @BeforeEach
-    void loginAndStubPersistence() {
+    void login() {
         CustomUserDetails principal = new CustomUserDetails(USER_ID, "me@example.com", "hash", List.of());
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
+    }
 
+    /** Persistence used by createTransaction. */
+    private void stubCreate() {
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(new User()));
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(inv -> {
             Transaction t = inv.getArgument(0);
@@ -71,6 +76,7 @@ class TransactionServiceTest {
 
     @Test
     void expenseOver10k_sendsOnlyTheHighValueAlert() {
+        stubCreate();
         transactionService.createTransaction(expense("12000"));
 
         CreateNotificationDTO sent = onlyNotification();
@@ -80,6 +86,7 @@ class TransactionServiceTest {
 
     @Test
     void expenseBetween5kAnd10k_sendsTheHeavySpendingAlert() {
+        stubCreate();
         transactionService.createTransaction(expense("6000"));
 
         CreateNotificationDTO sent = onlyNotification();
@@ -89,9 +96,45 @@ class TransactionServiceTest {
 
     @Test
     void smallExpense_sendsNoSpendingAlert() {
+        stubCreate();
         transactionService.createTransaction(expense("3000"));
 
         verify(notificationService, never()).createNotification(any());
+    }
+
+    @Test
+    void deletingAnExpense_reevaluatesTheBudgetsItCountedTowards() {
+        Transaction existing = existingExpense();
+        when(transactionRepository.findById(99L)).thenReturn(Optional.of(existing));
+
+        transactionService.deleteTransaction(99L);
+
+        verify(transactionRepository).delete(existing);
+        verify(budgetAlertService).onExpenseRecorded(USER_ID, "Food", LocalDate.of(2026, 10, 5));
+    }
+
+    @Test
+    void movingAnExpenseToAnotherCategory_reevaluatesOldAndNewBudgets() {
+        when(transactionRepository.findById(99L)).thenReturn(Optional.of(existingExpense()));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(inv -> inv.getArgument(0));
+        TransactionUpdateDTO update = new TransactionUpdateDTO();
+        update.setCategory("Travel");
+
+        transactionService.updateTransaction(99L, update);
+
+        verify(budgetAlertService).onExpenseRecorded(USER_ID, "Food", LocalDate.of(2026, 10, 5));
+        verify(budgetAlertService).onExpenseRecorded(USER_ID, "Travel", LocalDate.of(2026, 10, 5));
+    }
+
+    private static Transaction existingExpense() {
+        Transaction t = new Transaction();
+        t.setId(99L);
+        t.setUserId(USER_ID);
+        t.setAmount(new BigDecimal("600"));
+        t.setType(TransactionType.EXPENSE);
+        t.setCategory("Food");
+        t.setTransactionDate(LocalDateTime.of(2026, 10, 5, 10, 0));
+        return t;
     }
 
     private CreateNotificationDTO onlyNotification() {

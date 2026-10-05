@@ -67,7 +67,8 @@ fun BudgetFormContent(
         CategoryDropdown(
             categories = state.categories,
             selectedCategory = state.formCategory,
-            onCategorySelected = { onEvent(BudgetEvent.OnCategoryChanged(it)) }
+            onCategorySelected = { onEvent(BudgetEvent.OnCategoryChanged(it)) },
+            label = "Category (empty = all categories)"
         )
 
         Spacer(modifier = Modifier.height(8.dp))

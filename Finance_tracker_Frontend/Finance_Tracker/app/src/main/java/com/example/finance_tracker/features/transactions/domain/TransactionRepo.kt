@@ -8,6 +8,7 @@ interface TransactionRepo {
     suspend fun createTransaction(dto: TransactionCreateDTO): NetworkResult<TransactionResponseDTO>
     suspend fun getTransactionById(id: Long): NetworkResult<TransactionResponseDTO>
     suspend fun getAllTransactionsForUser(): NetworkResult<List<TransactionResponseDTO>>
+    suspend fun getCategories(): NetworkResult<List<String>>
     suspend fun getFilteredTransactions(
         category: String? = null,
         type: TransactionType? = null,

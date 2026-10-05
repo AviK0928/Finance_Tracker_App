@@ -28,6 +28,10 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
         List<Transaction> findAllByUserId(Long userId);
         boolean existsByUserIdAndContentHash(Long userId, String contentHash);
 
+        /** Categories the user has used, for category suggestions in the app. */
+        @Query("SELECT DISTINCT t.category FROM Transaction t WHERE t.userId = :userId ORDER BY t.category")
+        List<String> findDistinctCategoriesByUserId(@Param("userId") Long userId);
+
         /** Total of the user's transactions of one type in [from, to). Null when there are none. */
         @Query("""
                 SELECT SUM(t.amount) FROM Transaction t

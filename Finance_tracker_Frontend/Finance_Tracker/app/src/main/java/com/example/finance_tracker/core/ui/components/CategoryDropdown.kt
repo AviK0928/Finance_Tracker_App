@@ -6,6 +6,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+/**
+ * Category field: type any category or pick a suggestion. Categories are free text on the backend,
+ * so a new user (no categories yet) can still enter one.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryDropdown(
@@ -18,16 +22,21 @@ fun CategoryDropdown(
     errorMessage: String? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val typed = selectedCategory.orEmpty()
+    val suggestions = categories.filter { typed.isBlank() || it.contains(typed.trim(), ignoreCase = true) }
 
     Column(modifier = modifier) {
         ExposedDropdownMenuBox(
-            expanded = expanded,
+            expanded = expanded && suggestions.isNotEmpty(),
             onExpandedChange = { expanded = !expanded }
         ) {
             OutlinedTextField(
-                value = selectedCategory ?: "",
-                onValueChange = {},
-                readOnly = true,
+                value = typed,
+                onValueChange = {
+                    onCategorySelected(it)
+                    expanded = true
+                },
+                singleLine = true,
                 label = { Text(label) },
                 isError = isError,
                 trailingIcon = {
@@ -38,10 +47,10 @@ fun CategoryDropdown(
                     .menuAnchor()
             )
             ExposedDropdownMenu(
-                expanded = expanded,
+                expanded = expanded && suggestions.isNotEmpty(),
                 onDismissRequest = { expanded = false }
             ) {
-                categories.forEach { category ->
+                suggestions.forEach { category ->
                     DropdownMenuItem(
                         text = { Text(category) },
                         onClick = {

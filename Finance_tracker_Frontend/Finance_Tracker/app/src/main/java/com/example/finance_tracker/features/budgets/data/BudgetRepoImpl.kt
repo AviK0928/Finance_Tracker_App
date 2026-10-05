@@ -59,9 +59,11 @@ class BudgetRepoImpl @Inject constructor(
     override suspend fun exportBudgetsAsPdf(
         status: BudgetStatus?,
         frequency: BudgetFrequency?
-    ): NetworkResult<ByteArray> {
-        return ApiResponseHandler.handleApi {
-            api.exportBudgetsAsPdf(status, frequency)
+    ): NetworkResult<ByteArray> = withContext(Dispatchers.IO) {
+        when (val result = ApiResponseHandler.handleApi { api.exportBudgetsAsPdf(status, frequency) }) {
+            is NetworkResult.Success -> NetworkResult.Success(result.data.use { it.bytes() })
+            is NetworkResult.Error -> result
+            is NetworkResult.Loading -> NetworkResult.Loading
         }
     }
 }

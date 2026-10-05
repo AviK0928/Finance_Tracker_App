@@ -2,9 +2,11 @@ package com.example.finance_tracker.features.budgets.state
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.finance_tracker.core.data.model.DefaultCategories
 import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.core.network.model.budget.*
 import com.example.finance_tracker.features.budgets.domain.BudgetRepo
+import com.example.finance_tracker.features.transactions.domain.TransactionRepo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +18,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class BudgetViewModel @Inject constructor(
-    private val budgetRepo: BudgetRepo
+    private val budgetRepo: BudgetRepo,
+    private val transactionRepo: TransactionRepo
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(BudgetState())
@@ -68,10 +71,15 @@ class BudgetViewModel @Inject constructor(
             }
             is BudgetEvent.HideForm -> resetForm()
             is BudgetEvent.ClearError -> _state.update { it.copy(errorMessage = null) }
+            is BudgetEvent.ClearInfo -> _state.update { it.copy(infoMessage = null) }
+            is BudgetEvent.PdfSaved -> _state.update {
+                it.copy(pendingPdf = null, infoMessage = if (event.saved) "PDF saved" else null)
+            }
         }
     }
 
     private fun loadBudgets() {
+        loadCategories()
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
 
@@ -82,12 +90,9 @@ class BudgetViewModel @Inject constructor(
                                 (_state.value.filterFrequency == null || it.budgetFrequency == _state.value.filterFrequency)
                     }
 
-                    val remoteCategories = filtered.mapNotNull { it.category }.distinct()
-
                     _state.update {
                         it.copy(
                             budgets = filtered,
-                            categories = remoteCategories,
                             isLoading = false
                         )
                     }
@@ -96,6 +101,16 @@ class BudgetViewModel @Inject constructor(
                     _state.update { it.copy(errorMessage = result.message, isLoading = false) }
                 }
                 NetworkResult.Loading -> _state.update { it.copy(isLoading = true) }
+            }
+        }
+    }
+
+    /** Suggestions for the budget category: defaults plus the categories the user has spent in. */
+    private fun loadCategories() {
+        viewModelScope.launch {
+            val result = transactionRepo.getCategories()
+            if (result is NetworkResult.Success) {
+                _state.update { it.copy(categories = DefaultCategories.merge(result.data)) }
             }
         }
     }
@@ -212,7 +227,7 @@ class BudgetViewModel @Inject constructor(
             )
             when (result) {
                 is NetworkResult.Success -> {
-                    _state.update { it.copy(isLoading = false) }
+                    _state.update { it.copy(isLoading = false, pendingPdf = result.data) }
                 }
                 is NetworkResult.Error -> _state.update { it.copy(errorMessage = result.message, isLoading = false) }
                 NetworkResult.Loading -> _state.update { it.copy(isLoading = true) }

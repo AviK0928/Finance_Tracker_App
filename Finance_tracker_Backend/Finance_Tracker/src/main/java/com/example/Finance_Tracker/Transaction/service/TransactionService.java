@@ -25,6 +25,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -56,6 +57,10 @@ public class TransactionService {
                 filter.getMaxAmount()
         );
         return transactionRepository.findAll(spec);
+    }
+
+    public List<String> getCategoriesForUser() {
+        return transactionRepository.findDistinctCategoriesByUserId(SecurityUtils.getCurrentUserId());
     }
 
     public List<Transaction> getAllTransactionsForUser(){
@@ -168,6 +173,11 @@ public class TransactionService {
             throw new AccessDeniedException("You are not authorized to update this transaction");
         }
 
+        // Budgets the expense counted towards before the change may drop below a notified stage
+        TransactionType oldType = transaction.getType();
+        String oldCategory = transaction.getCategory();
+        LocalDate oldDate = transaction.getTransactionDate().toLocalDate();
+
         if (dto.getAmount() != null) transaction.setAmount(dto.getAmount());
         if (dto.getType() != null) transaction.setType(dto.getType());
         if (dto.getCategory() != null) transaction.setCategory(dto.getCategory());
@@ -175,6 +185,9 @@ public class TransactionService {
         if (dto.getTransactionDate() != null) transaction.setTransactionDate(dto.getTransactionDate());
 
         Transaction saved = transactionRepository.save(transaction);
+        if (oldType == TransactionType.EXPENSE) {
+            budgetAlertService.onExpenseRecorded(currentUserId, oldCategory, oldDate);
+        }
         alertBudgetsIfExpense(saved);
         return saved;
     }
@@ -197,6 +210,7 @@ public class TransactionService {
         }
 
         transactionRepository.delete(transaction);
+        alertBudgetsIfExpense(transaction); // budgets it counted towards may drop below a notified stage
     }
 
     public Page<Transaction> getTransactions(Pageable pageable, TransactionFilterDTO filter) {

@@ -16,6 +16,9 @@ interface TransactionApi {
         @Path("id") id: Long
     ): Response<TransactionResponseDTO>
 
+    @GET("/api/transactions/categories")
+    suspend fun getCategories(): Response<List<String>>
+
     @GET("/api/transactions/user")
     suspend fun getAllTransactionsForUser(): Response<List<TransactionResponseDTO>>
 

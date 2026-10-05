@@ -1,5 +1,6 @@
 package com.example.finance_tracker.features.transactions.state
 
+import com.example.finance_tracker.core.data.model.DefaultCategories
 import com.example.finance_tracker.core.network.model.transaction.PaginatedTransactionResponse
 import com.example.finance_tracker.core.network.model.transaction.TransactionFilterDTO
 import com.example.finance_tracker.core.network.model.transaction.TransactionResponseDTO
@@ -26,7 +27,7 @@ data class TransactionState(
     val formType: TransactionType = TransactionType.EXPENSE,
     val formDate: String = "",
     val formDescription: String = "",
-    val categories: List<String> = emptyList(),
+    val categories: List<String> = DefaultCategories.ALL,
 
     val isEditing: Boolean = false,
     val isFormVisible: Boolean = false

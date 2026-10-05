@@ -32,6 +32,10 @@ class TransactionRepoImpl(
         return ApiResponseHandler.handleApi { api.getAllTransactionsForUser() }
     }
 
+    override suspend fun getCategories(): NetworkResult<List<String>> {
+        return ApiResponseHandler.handleApi { api.getCategories() }
+    }
+
     override suspend fun getLocalTransactions(): List<TransactionDTO> {
         return withContext(Dispatchers.IO) {
             transactionDao.getAllTransactions().map {

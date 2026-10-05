@@ -37,20 +37,30 @@ public class BudgetAlertService {
         this.notificationService = notificationService;
     }
 
-    /** Re-checks every active budget an expense on {@code date} in {@code category} counts towards. */
+    /**
+     * Re-checks every active budget an expense on {@code date} in {@code category} counts towards.
+     * Called when an expense is recorded, and for its old values when it is changed or deleted.
+     */
     public void onExpenseRecorded(Long userId, String category, LocalDate date) {
         budgetRepository.findBudgetsCovering(userId, BudgetStatus.ACTIVE, date, category)
                 .forEach(this::evaluate);
     }
 
-    /** Notifies the owner if the budget reached a stage higher than the last one notified. */
+    /**
+     * Notifies the owner if the budget reached a stage higher than the last one notified.
+     * If spending fell below the notified stage (amount raised, expense deleted or moved),
+     * the stage is lowered silently so the next crossing is announced again.
+     */
     public void evaluate(Budget budget) {
         BigDecimal spent = spendingCalculator.spentFor(budget);
         BudgetUsageAlertStage reached = stageFor(spent, budget.getAmount());
-        if (reached.ordinal() <= budget.getLastNotifiedStage().ordinal()) {
+        BudgetUsageAlertStage notified = budget.getLastNotifiedStage();
+        if (reached == notified) {
             return;
         }
-        notificationService.createNotificationForUser(budget.getUserId(), notificationFor(budget, reached));
+        if (reached.ordinal() > notified.ordinal()) {
+            notificationService.createNotificationForUser(budget.getUserId(), notificationFor(budget, reached));
+        }
         budget.setLastNotifiedStage(reached);
         budgetRepository.save(budget);
     }

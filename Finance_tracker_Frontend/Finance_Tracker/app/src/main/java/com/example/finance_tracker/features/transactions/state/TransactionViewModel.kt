@@ -2,6 +2,7 @@ package com.example.finance_tracker.features.transactions.state
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.finance_tracker.core.data.model.DefaultCategories
 import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.core.network.model.transaction.*
 import com.example.finance_tracker.features.transactions.domain.TransactionRepo
@@ -24,7 +25,10 @@ class TransactionViewModel @Inject constructor(
 
     fun onEvent(event: TransactionEvent) {
         when (event) {
-            is TransactionEvent.LoadInitial -> loadTransactions(0)
+            is TransactionEvent.LoadInitial -> {
+                loadTransactions(0)
+                loadCategories()
+            }
             is TransactionEvent.LoadNextPage -> loadTransactions(_state.value.currentPage + 1)
             is TransactionEvent.ApplyFilter -> applyFilter(event.filter)
             is TransactionEvent.ClearFilter -> clearFilter()
@@ -92,6 +96,16 @@ class TransactionViewModel @Inject constructor(
                     }
                 }
                 NetworkResult.Loading -> _state.update { it.copy(isLoading = true) }
+            }
+        }
+    }
+
+    /** Suggestions for the category field: defaults plus the user's own categories. */
+    private fun loadCategories() {
+        viewModelScope.launch {
+            val result = transactionRepo.getCategories()
+            if (result is NetworkResult.Success) {
+                _state.update { it.copy(categories = DefaultCategories.merge(result.data)) }
             }
         }
     }

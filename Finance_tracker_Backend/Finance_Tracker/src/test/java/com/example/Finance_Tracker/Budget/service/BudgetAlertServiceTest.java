@@ -124,6 +124,29 @@ class BudgetAlertServiceTest {
     }
 
     @Test
+    void spendingFellBelowNotifiedStage_lowersStageWithoutNotifying() {
+        Budget budget = budget(1L, BudgetUsageAlertStage.EXCEEDED);
+        spent(budget, "600.00"); // e.g. the budget amount was raised or an expense was deleted
+
+        alertService.evaluate(budget);
+
+        verifyNoInteractions(notificationService);
+        assertThat(budget.getLastNotifiedStage()).isEqualTo(BudgetUsageAlertStage.FIFTY_PERCENT);
+        verify(budgetRepository).save(budget);
+    }
+
+    @Test
+    void allSpendingRemoved_stageGoesBackToNone() {
+        Budget budget = budget(1L, BudgetUsageAlertStage.NINETY_PERCENT);
+        spent(budget, "0");
+
+        alertService.evaluate(budget);
+
+        verifyNoInteractions(notificationService);
+        assertThat(budget.getLastNotifiedStage()).isEqualTo(BudgetUsageAlertStage.NONE);
+    }
+
+    @Test
     void onExpenseRecorded_evaluatesEveryBudgetTheExpenseCountsTowards() {
         Budget food = budget(1L, BudgetUsageAlertStage.NONE);
         Budget overall = budget(2L, BudgetUsageAlertStage.NONE);

@@ -41,6 +41,12 @@ public class TransactionController {
         return ResponseEntity.created(location).body(TransactionResponseDTO.fromEntity(created));
     }
 
+    /** Distinct categories the user has used (suggestions for the category field). */
+    @GetMapping("/categories")
+    public ResponseEntity<List<String>> getCategories() {
+        return ResponseEntity.ok(transactionService.getCategoriesForUser());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<TransactionResponseDTO> getTransactionById(@PathVariable Long id) {
         Transaction transaction = transactionService.getTransactionById(id);

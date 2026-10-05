@@ -25,4 +25,6 @@ sealed class BudgetEvent {
     data class ApplyFilter(val status: BudgetStatus?, val frequency: BudgetFrequency?) : BudgetEvent()
     object ClearFilter : BudgetEvent()
     object ExportToPdf : BudgetEvent()
+    data class PdfSaved(val saved: Boolean) : BudgetEvent()
+    object ClearInfo : BudgetEvent()
 }

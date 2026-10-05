@@ -82,6 +82,11 @@ public class BudgetService {
             throw new UnauthorizedBudgetAccessException("You do not have permission to update this budget.");
         }
 
+        if (!dto.getEndDate().equals(budget.getEndDate())) {
+            // New end date: the expiry reminders apply to it again
+            budget.setExpiryNotificationSent(false);
+            budget.setNearingExpiryNotificationSent(false);
+        }
         budget.setName(dto.getName());
         budget.setCategory(normalizeCategory(dto.getCategory()));
         budget.setAmount(dto.getAmount());

@@ -177,4 +177,14 @@ class TransactionControllerTest {
         assertThat(pageable.getPageSize()).isEqualTo(10);
         assertThat(pageable.getSort()).isEqualTo(Sort.by(Sort.Direction.DESC, "transactionDate"));
     }
+
+    @Test
+    void categories_returnsTheUsersDistinctCategories() throws Exception {
+        when(transactionService.getCategoriesForUser()).thenReturn(List.of("Food", "Rent"));
+
+        mockMvc.perform(get("/api/transactions/categories"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0]").value("Food"))
+                .andExpect(jsonPath("$[1]").value("Rent"));
+    }
 }
