@@ -5,6 +5,7 @@ import com.example.Finance_Tracker.Notification.dto.CreateNotificationDTO;
 import com.example.Finance_Tracker.Notification.service.NotificationService;
 import com.example.Finance_Tracker.Notification.util.NotificationType;
 import com.example.Finance_Tracker.Security.SecurityUtils;
+import com.example.Finance_Tracker.Settings.util.SettingKey;
 import com.example.Finance_Tracker.Transaction.dto.TransactionCreateDTO;
 import com.example.Finance_Tracker.Transaction.dto.TransactionFilterDTO;
 import com.example.Finance_Tracker.Transaction.dto.TransactionUpdateDTO;
@@ -99,12 +100,13 @@ public class TransactionService {
             dto1.setMessage("You made a high-value expense of ₹" + amount + " in category: " + transaction.getCategory());
             dto1.setType(NotificationType.WARNING);
             dto1.setReferenceId(transaction.getId());
+            dto1.setPreference(SettingKey.NOTIFY_SPENDING_ALERTS);
 
             notificationService.createNotification(dto1);
         }
 
-        // 2. Category Overspend (> ₹5,000 per transaction)
-        if ("EXPENSE".equalsIgnoreCase(type) && amount.compareTo(BigDecimal.valueOf(5000)) > 0) {
+        // 2. Category Overspend (> ₹5,000 per transaction). Tiered with 1: one expense gets one alert.
+        else if ("EXPENSE".equalsIgnoreCase(type) && amount.compareTo(BigDecimal.valueOf(5000)) > 0) {
             String categoryTitle = "Heavy Spending in " + transaction.getCategory();
 
             CreateNotificationDTO dto2 = new CreateNotificationDTO();
@@ -112,6 +114,7 @@ public class TransactionService {
             dto2.setMessage("You’ve spent over ₹5,000 in category: " + transaction.getCategory());
             dto2.setType(NotificationType.ALERT);
             dto2.setReferenceId(transaction.getId());
+            dto2.setPreference(SettingKey.NOTIFY_SPENDING_ALERTS);
 
             notificationService.createNotification(dto2);
         }

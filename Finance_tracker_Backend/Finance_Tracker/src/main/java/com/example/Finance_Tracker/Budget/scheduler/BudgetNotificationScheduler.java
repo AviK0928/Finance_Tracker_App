@@ -6,6 +6,7 @@ import com.example.Finance_Tracker.Budget.util.BudgetStatus;
 import com.example.Finance_Tracker.Notification.dto.CreateNotificationDTO;
 import com.example.Finance_Tracker.Notification.service.NotificationService;
 import com.example.Finance_Tracker.Notification.util.NotificationType;
+import com.example.Finance_Tracker.Settings.util.SettingKey;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,6 +78,7 @@ public class BudgetNotificationScheduler {
         dto.setMessage(message);
         dto.setType(type);
         dto.setReferenceId(budget.getId());
+        dto.setPreference(SettingKey.NOTIFY_BUDGET_EXPIRY);
         return dto;
     }
 }

@@ -7,9 +7,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
-    List<Notification> findByUserId(Long userId);
+    /** The user's inbox: archived notifications are hidden, newest first. */
+    List<Notification> findByUserIdAndArchivedFalseOrderByCreatedAtDesc(Long userId);
     List<Notification> findByUserIdAndReadFalse(Long userId);
-    long countByUserIdAndReadFalse(Long userId);
+    long countByUserIdAndReadFalseAndArchivedFalse(Long userId);
     void deleteByUserId(Long userId); // optional cleanup
     boolean existsByUserIdAndTitleAndCreatedAtBetween(Long userId, String title, LocalDateTime start, LocalDateTime end);
 }

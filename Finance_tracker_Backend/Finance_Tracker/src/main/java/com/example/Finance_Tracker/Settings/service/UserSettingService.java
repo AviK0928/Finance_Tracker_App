@@ -91,7 +91,15 @@ public class UserSettingService {
     }
 
     public String getRawValue(SettingKey key) {
-        Long userId = SecurityUtils.getCurrentUserId();
+        return getRawValueForUser(SecurityUtils.getCurrentUserId(), key);
+    }
+
+    /** For callers without a logged-in user (scheduler threads, notifications for a given owner). */
+    public boolean getBooleanForUser(Long userId, SettingKey key) {
+        return Boolean.parseBoolean(getRawValueForUser(userId, key));
+    }
+
+    private String getRawValueForUser(Long userId, SettingKey key) {
         return settingRepository.findByUserIdAndKey(userId, key)
                 .map(UserSetting::getValue)
                 .orElse(DEFAULTS.get(key));

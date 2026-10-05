@@ -5,6 +5,7 @@ import com.example.Finance_Tracker.Budget.repository.BudgetRepository;
 import com.example.Finance_Tracker.Notification.dto.CreateNotificationDTO;
 import com.example.Finance_Tracker.Notification.service.NotificationService;
 import com.example.Finance_Tracker.Notification.util.NotificationType;
+import com.example.Finance_Tracker.Settings.util.SettingKey;
 import com.example.Finance_Tracker.Settings.dto.UserSettingDTO;
 import com.example.Finance_Tracker.Settings.service.UserSettingService;
 import com.example.Finance_Tracker.Sync.dto.*;
@@ -50,6 +51,7 @@ public class SyncService {
             start.setTitle("Sync Started");
             start.setMessage("Your finance data sync has started.");
             start.setType(NotificationType.INFO);
+            start.setPreference(SettingKey.NOTIFY_SYNC_EVENTS);
             notificationService.createNotificationForUser(userId, start);
         }
 
@@ -87,6 +89,7 @@ public class SyncService {
             done.setTitle("Sync Complete");
             done.setMessage("Your data has been synced successfully.");
             done.setType(NotificationType.SYNC_SUCCESS);
+            done.setPreference(SettingKey.NOTIFY_SYNC_EVENTS);
             notificationService.createNotificationForUser(userId, done);
         }
 

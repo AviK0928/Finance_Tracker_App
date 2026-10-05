@@ -2,10 +2,14 @@ package com.example.Finance_Tracker.Notification;
 
 import com.example.Finance_Tracker.Core.exception.ResourceNotFoundException;
 import com.example.Finance_Tracker.Core.websockets.NotificationWebSocketPublisher;
+import com.example.Finance_Tracker.Notification.dto.CreateNotificationDTO;
+import com.example.Finance_Tracker.Notification.dto.NotificationDTO;
 import com.example.Finance_Tracker.Notification.entity.Notification;
 import com.example.Finance_Tracker.Notification.repository.NotificationRepository;
 import com.example.Finance_Tracker.Notification.service.NotificationService;
 import com.example.Finance_Tracker.Notification.util.NotificationType;
+import com.example.Finance_Tracker.Settings.service.UserSettingService;
+import com.example.Finance_Tracker.Settings.util.SettingKey;
 import com.example.Finance_Tracker.User.mapper.CustomUserDetails;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +28,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,6 +42,7 @@ class NotificationServiceTest {
 
     @Mock private NotificationRepository notificationRepository;
     @Mock private NotificationWebSocketPublisher notificationWebSocketPublisher;
+    @Mock private UserSettingService userSettingService;
 
     @InjectMocks private NotificationService notificationService;
 
@@ -112,5 +118,69 @@ class NotificationServiceTest {
 
         assertThat(own.isArchived()).isTrue();
         verify(notificationRepository).save(own);
+    }
+
+    @Test
+    void getNotifications_returnsInboxWithoutArchived() {
+        when(notificationRepository.findByUserIdAndArchivedFalseOrderByCreatedAtDesc(CURRENT_USER_ID))
+                .thenReturn(List.of(notificationOwnedBy(CURRENT_USER_ID)));
+
+        List<NotificationDTO> inbox = notificationService.getNotificationsByUser();
+
+        assertThat(inbox).hasSize(1);
+        assertThat(inbox.get(0).getTitle()).isEqualTo("High Value Expense");
+    }
+
+    @Test
+    void getUnreadCount_excludesArchived() {
+        when(notificationRepository.countByUserIdAndReadFalseAndArchivedFalse(CURRENT_USER_ID)).thenReturn(3L);
+
+        assertThat(notificationService.getUnreadCount()).isEqualTo(3L);
+    }
+
+    @Test
+    void createNotificationForUser_whenEnabled_savesAndPublishes() {
+        when(userSettingService.getBooleanForUser(OTHER_USER_ID, SettingKey.NOTIFICATIONS_ENABLED)).thenReturn(true);
+        when(userSettingService.getBooleanForUser(OTHER_USER_ID, SettingKey.NOTIFY_SPENDING_ALERTS)).thenReturn(true);
+        when(notificationRepository.save(any(Notification.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Notification saved = notificationService.createNotificationForUser(
+                OTHER_USER_ID, dto(SettingKey.NOTIFY_SPENDING_ALERTS));
+
+        assertThat(saved).isNotNull();
+        assertThat(saved.getUserId()).isEqualTo(OTHER_USER_ID);
+        verify(notificationWebSocketPublisher).sendNotification(eq(OTHER_USER_ID), any());
+    }
+
+    @Test
+    void createNotificationForUser_mutedByPreference_savesAndPublishesNothing() {
+        when(userSettingService.getBooleanForUser(OTHER_USER_ID, SettingKey.NOTIFICATIONS_ENABLED)).thenReturn(true);
+        when(userSettingService.getBooleanForUser(OTHER_USER_ID, SettingKey.NOTIFY_SPENDING_ALERTS)).thenReturn(false);
+
+        Notification saved = notificationService.createNotificationForUser(
+                OTHER_USER_ID, dto(SettingKey.NOTIFY_SPENDING_ALERTS));
+
+        assertThat(saved).isNull();
+        verify(notificationRepository, never()).save(any());
+        verify(notificationWebSocketPublisher, never()).sendNotification(any(), any());
+    }
+
+    @Test
+    void createNotificationForUser_masterSwitchOff_mutesEvenWithoutPreference() {
+        when(userSettingService.getBooleanForUser(OTHER_USER_ID, SettingKey.NOTIFICATIONS_ENABLED)).thenReturn(false);
+
+        Notification saved = notificationService.createNotificationForUser(OTHER_USER_ID, dto(null));
+
+        assertThat(saved).isNull();
+        verify(notificationRepository, never()).save(any());
+    }
+
+    private static CreateNotificationDTO dto(SettingKey preference) {
+        CreateNotificationDTO dto = new CreateNotificationDTO();
+        dto.setTitle("High Value Expense");
+        dto.setMessage("You made a high-value expense");
+        dto.setType(NotificationType.WARNING);
+        dto.setPreference(preference);
+        return dto;
     }
 }

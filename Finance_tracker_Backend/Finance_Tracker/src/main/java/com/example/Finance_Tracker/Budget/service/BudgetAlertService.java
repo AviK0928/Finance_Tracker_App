@@ -7,6 +7,7 @@ import com.example.Finance_Tracker.Budget.util.BudgetUsageAlertStage;
 import com.example.Finance_Tracker.Notification.dto.CreateNotificationDTO;
 import com.example.Finance_Tracker.Notification.service.NotificationService;
 import com.example.Finance_Tracker.Notification.util.NotificationType;
+import com.example.Finance_Tracker.Settings.util.SettingKey;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -73,6 +74,7 @@ public class BudgetAlertService {
     private static CreateNotificationDTO notificationFor(Budget budget, BudgetUsageAlertStage stage) {
         CreateNotificationDTO dto = new CreateNotificationDTO();
         dto.setReferenceId(budget.getId());
+        dto.setPreference(SettingKey.NOTIFY_SPENDING_ALERTS);
         switch (stage) {
             case FIFTY_PERCENT -> {
                 dto.setTitle("50% Budget Used");

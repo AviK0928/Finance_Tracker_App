@@ -9,6 +9,8 @@ import com.example.Finance_Tracker.Notification.entity.Notification;
 import com.example.Finance_Tracker.Notification.mapper.NotificationMapper;
 import com.example.Finance_Tracker.Notification.repository.NotificationRepository;
 import com.example.Finance_Tracker.Notification.util.NotificationType;
+import com.example.Finance_Tracker.Settings.service.UserSettingService;
+import com.example.Finance_Tracker.Settings.util.SettingKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,8 @@ public class NotificationService {
     private NotificationRepository notificationRepository;
     @Autowired
     private NotificationWebSocketPublisher notificationWebSocketPublisher;
+    @Autowired
+    private UserSettingService userSettingService;
 
     public List<NotificationDTO> getNotificationsByUser() {
         Long userId = SecurityUtils.getCurrentUserId();
@@ -32,34 +36,19 @@ public class NotificationService {
             throw new IllegalStateException("User not authenticated");
         }
 
-        return notificationRepository.findByUserId(userId)
+        return notificationRepository.findByUserIdAndArchivedFalseOrderByCreatedAtDesc(userId)
                 .stream()
                 .map(NotificationMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
+    /** Same as {@link #createNotificationForUser} for the logged-in user. */
     public Notification createNotification(CreateNotificationDTO dto) {
         Long userId = SecurityUtils.getCurrentUserId();
         if (userId == null) {
             throw new IllegalStateException("User not authenticated");
         }
-
-        Notification notification = Notification.builder()
-                .userId(userId)
-                .title(dto.getTitle())
-                .message(dto.getMessage())
-                .type(dto.getType())
-                .read(false)
-                .referenceId(dto.getReferenceId())
-                .archived(false)
-                .build();
-
-        Notification saved = notificationRepository.save(notification);
-
-        NotificationDTO notificationDTO = NotificationMapper.toDTO(saved);
-        notificationWebSocketPublisher.sendNotification(userId, notificationDTO);
-
-        return saved;
+        return createNotificationForUser(userId, dto);
     }
 
     public void markAsRead(Long notificationId) {
@@ -85,7 +74,7 @@ public class NotificationService {
             throw new IllegalStateException("User not authenticated");
         }
 
-        return notificationRepository.countByUserIdAndReadFalse(userId);
+        return notificationRepository.countByUserIdAndReadFalseAndArchivedFalse(userId);
     }
 
     public void deleteNotification(Long id) {
@@ -141,7 +130,16 @@ public class NotificationService {
         return notificationRepository.existsByUserIdAndTitleAndCreatedAtBetween(userId, title, start, end);
     }
 
+    /**
+     * Saves and pushes a notification unless the user muted it (master switch or {@code dto.preference}).
+     * Callers continue as if it was sent, so a muted alert is not re-sent later.
+     *
+     * @return the saved notification, or {@code null} when muted
+     */
     public Notification createNotificationForUser(Long userId, CreateNotificationDTO dto) {
+        if (!isWanted(userId, dto.getPreference())) {
+            return null;
+        }
         Notification notification = Notification.builder()
                 .userId(userId)
                 .title(dto.getTitle())
@@ -157,5 +155,12 @@ public class NotificationService {
         notificationWebSocketPublisher.sendNotification(userId, notificationDTO);
 
         return saved;
+    }
+
+    private boolean isWanted(Long userId, SettingKey preference) {
+        if (!userSettingService.getBooleanForUser(userId, SettingKey.NOTIFICATIONS_ENABLED)) {
+            return false;
+        }
+        return preference == null || userSettingService.getBooleanForUser(userId, preference);
     }
 }
