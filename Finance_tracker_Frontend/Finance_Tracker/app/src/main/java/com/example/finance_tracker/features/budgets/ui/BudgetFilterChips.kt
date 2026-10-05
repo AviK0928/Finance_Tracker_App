@@ -1,11 +1,13 @@
 package com.example.finance_tracker.features.budgets.ui
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,7 +30,10 @@ fun BudgetFilterChips(
     Column {
         Text("Status", style = MaterialTheme.typography.labelMedium)
         Spacer(modifier = Modifier.height(4.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             BudgetStatus.entries.forEach { status ->
                 FilterChip(
                     selected = selectedStatus == status,
@@ -43,7 +48,10 @@ fun BudgetFilterChips(
 
         Text("Frequency", style = MaterialTheme.typography.labelMedium)
         Spacer(modifier = Modifier.height(4.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             BudgetFrequency.entries.forEach { freq ->
                 FilterChip(
                     selected = selectedFrequency == freq,

@@ -29,11 +29,15 @@ fun BudgetList(
                     .padding(vertical = 4.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(budget.title, style = MaterialTheme.typography.titleMedium)
-                    Text("${budget.amount} • ${budget.category}", style = MaterialTheme.typography.bodyMedium)
+                    Text(budget.name, style = MaterialTheme.typography.titleMedium)
+                    Text("${budget.amount} • ${budget.category ?: "All categories"}", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        "Spent ${budget.spentAmount} (${budget.percentageSpent}%), remaining ${budget.remainingAmount}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
                     Text("From ${budget.startDate} to ${budget.endDate}", style = MaterialTheme.typography.bodySmall)
-                    Text("Frequency: ${budget.frequency.name}", style = MaterialTheme.typography.labelSmall)
-                    Text("Status: ${budget.status.name}", style = MaterialTheme.typography.labelSmall)
+                    Text("Frequency: ${budget.budgetFrequency.name}", style = MaterialTheme.typography.labelSmall)
+                    Text("Status: ${budget.budgetStatus.name}", style = MaterialTheme.typography.labelSmall)
                 }
             }
         }

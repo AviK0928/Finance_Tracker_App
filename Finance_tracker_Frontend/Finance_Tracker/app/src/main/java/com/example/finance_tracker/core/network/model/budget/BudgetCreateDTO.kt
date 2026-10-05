@@ -1,10 +1,14 @@
 package com.example.finance_tracker.core.network.model.budget
 
+import java.time.LocalDate
+
+// Mirrors backend Budget/dto/BudgetCreateDTO. Dates are sent as "yyyy-MM-dd" by GsonProvider.
 data class BudgetCreateDTO(
-    val title: String,
+    val name: String,
+    val category: String?,
     val amount: Double,
-    val category: String,
-    val startDate: String, // Format: ISO-8601 (e.g., "2025-06-19T00:00:00")
-    val endDate: String,
-    val frequency: BudgetFrequency
+    val startDate: LocalDate,
+    val endDate: LocalDate,
+    val frequency: BudgetFrequency,
+    val notes: String? = null
 )

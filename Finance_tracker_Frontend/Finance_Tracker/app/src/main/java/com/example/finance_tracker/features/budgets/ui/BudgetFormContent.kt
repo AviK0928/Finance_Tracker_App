@@ -1,6 +1,8 @@
 package com.example.finance_tracker.features.budgets.ui
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -88,7 +90,10 @@ fun BudgetFormContent(
 
         Text("Frequency", style = MaterialTheme.typography.labelMedium)
         Spacer(modifier = Modifier.height(4.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             BudgetFrequency.entries.forEach { freq ->
                 FilterChip(
                     selected = state.formFrequency == freq,
@@ -100,19 +105,25 @@ fun BudgetFormContent(
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        // The backend create request has no status (new budgets are ACTIVE); only update sends it
+        if (state.isEditing) {
+            Spacer(modifier = Modifier.height(12.dp))
 
-        Text("Status", style = MaterialTheme.typography.labelMedium)
-        Spacer(modifier = Modifier.height(4.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            BudgetStatus.entries.forEach { status ->
-                FilterChip(
-                    selected = state.formStatus == status,
-                    onClick = { onEvent(BudgetEvent.OnStatusChanged(status)) },
-                    label = { Text(status.name) },
-                    interactionSource = remember { MutableInteractionSource() },
-                    trailingIcon = null
-                )
+            Text("Status", style = MaterialTheme.typography.labelMedium)
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                BudgetStatus.entries.forEach { status ->
+                    FilterChip(
+                        selected = state.formStatus == status,
+                        onClick = { onEvent(BudgetEvent.OnStatusChanged(status)) },
+                        label = { Text(status.name) },
+                        interactionSource = remember { MutableInteractionSource() },
+                        trailingIcon = null
+                    )
+                }
             }
         }
 

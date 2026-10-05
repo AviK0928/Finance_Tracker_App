@@ -4,14 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.core.network.model.budget.*
-import com.example.finance_tracker.core.network.model.sync.BudgetDTO
 import com.example.finance_tracker.features.budgets.domain.BudgetRepo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.math.BigDecimal
+import java.time.LocalDate
+import java.time.format.DateTimeParseException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -57,7 +57,15 @@ class BudgetViewModel @Inject constructor(
             }
 
             is BudgetEvent.ExportToPdf -> exportPdf()
-            is BudgetEvent.ShowForm -> _state.update { it.copy(isFormVisible = true) }
+            is BudgetEvent.ShowForm -> _state.update {
+                // The date pickers display today when the field is empty; store it so submit sends it
+                val today = LocalDate.now().toString()
+                it.copy(
+                    isFormVisible = true,
+                    formStartDate = it.formStartDate.ifBlank { today },
+                    formEndDate = it.formEndDate.ifBlank { today }
+                )
+            }
             is BudgetEvent.HideForm -> resetForm()
             is BudgetEvent.ClearError -> _state.update { it.copy(errorMessage = null) }
         }
@@ -67,28 +75,14 @@ class BudgetViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
 
-            // Always load Room budgets first
-            val localBudgets = budgetRepo.getLocalBudgets()
-            val fallbackDisplay = localBudgets.map { it.toFallbackResponse() }
-            val localCategories = fallbackDisplay.map { it.category }.distinct()
-
-            _state.update {
-                it.copy(
-                    budgets = fallbackDisplay,
-                    categories = localCategories,
-                    isLoading = false
-                )
-            }
-
-            // Try syncing with backend
             when (val result = budgetRepo.getBudgetsByUser()) {
                 is NetworkResult.Success -> {
                     val filtered = result.data.filter {
-                        (_state.value.filterStatus == null || it.status == _state.value.filterStatus) &&
-                                (_state.value.filterFrequency == null || it.frequency == _state.value.filterFrequency)
+                        (_state.value.filterStatus == null || it.budgetStatus == _state.value.filterStatus) &&
+                                (_state.value.filterFrequency == null || it.budgetFrequency == _state.value.filterFrequency)
                     }
 
-                    val remoteCategories = filtered.map { it.category }.distinct()
+                    val remoteCategories = filtered.mapNotNull { it.category }.distinct()
 
                     _state.update {
                         it.copy(
@@ -109,10 +103,18 @@ class BudgetViewModel @Inject constructor(
     private fun submitForm() {
         val current = _state.value
         val amount = current.formAmount.toDoubleOrNull()
-        if (amount == null || current.formTitle.isBlank() || current.formCategory.isBlank()) {
+        val startDate = current.formStartDate.toLocalDateOrNull()
+        val endDate = current.formEndDate.toLocalDateOrNull()
+        if (amount == null || amount <= 0.0 || current.formTitle.isBlank() || startDate == null || endDate == null) {
             _state.update { it.copy(errorMessage = "Invalid input") }
             return
         }
+        if (endDate.isBefore(startDate)) {
+            _state.update { it.copy(errorMessage = "End date must be on or after start date") }
+            return
+        }
+        // Category is optional on the backend: blank means the budget covers all expense categories
+        val category = current.formCategory.ifBlank { null }
 
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
@@ -121,11 +123,11 @@ class BudgetViewModel @Inject constructor(
                 budgetRepo.updateBudget(
                     id = current.selectedBudget.id,
                     dto = BudgetUpdateDTO(
-                        title = current.formTitle,
+                        name = current.formTitle,
                         amount = amount,
-                        category = current.formCategory,
-                        startDate = current.formStartDate,
-                        endDate = current.formEndDate,
+                        category = category,
+                        startDate = startDate,
+                        endDate = endDate,
                         frequency = current.formFrequency,
                         status = current.formStatus
                     )
@@ -133,11 +135,11 @@ class BudgetViewModel @Inject constructor(
             } else {
                 budgetRepo.createBudget(
                     dto = BudgetCreateDTO(
-                        title = current.formTitle,
+                        name = current.formTitle,
                         amount = amount,
-                        category = current.formCategory,
-                        startDate = current.formStartDate,
-                        endDate = current.formEndDate,
+                        category = category,
+                        startDate = startDate,
+                        endDate = endDate,
                         frequency = current.formFrequency
                     )
                 )
@@ -160,13 +162,13 @@ class BudgetViewModel @Inject constructor(
         _state.update {
             it.copy(
                 selectedBudget = budget,
-                formTitle = budget.title,
+                formTitle = budget.name,
                 formAmount = budget.amount.toString(),
-                formCategory = budget.category,
-                formStartDate = budget.startDate,
-                formEndDate = budget.endDate,
-                formFrequency = budget.frequency,
-                formStatus = budget.status,
+                formCategory = budget.category ?: "",
+                formStartDate = budget.startDate.toString(),
+                formEndDate = budget.endDate.toString(),
+                formFrequency = budget.budgetFrequency,
+                formStatus = budget.budgetStatus,
                 isEditing = true,
                 isFormVisible = true
             )
@@ -218,26 +220,10 @@ class BudgetViewModel @Inject constructor(
         }
     }
 
-    // Converts offline-only BudgetDTO to fake BudgetResponseDTO for rendering
-    private fun BudgetDTO.toFallbackResponse(): BudgetResponseDTO {
-        return BudgetResponseDTO(
-            id = -1,
-            userId = -1,
-            title = "NA",
-            amount = this.amount.toDoubleOrNull() ?: 99999999.0,
-            category = "NA",
-            startDate = "NA",
-            endDate = "NA",
-            frequency = BudgetFrequency.MONTHLY,
-            status = BudgetStatus.ACTIVE,
-            createdAt = "NA",
-            updatedAt = this.updatedAt.toString()
-        )
-    }
-
-    private fun BigDecimal.toDoubleOrNull(): Double? = try {
-        this.toDouble()
-    } catch (e: Exception) {
+    // Form dates are ISO "yyyy-MM-dd" strings produced by DatePickerField (LocalDate.toString())
+    private fun String.toLocalDateOrNull(): LocalDate? = try {
+        LocalDate.parse(this)
+    } catch (e: DateTimeParseException) {
         null
     }
 }

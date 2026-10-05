@@ -21,7 +21,7 @@ fun DashboardBudgetView(state: DashboardState) {
         } else {
             Text("Active Budgets:")
             state.activeBudgets.forEach { budget ->
-                Text("- ${budget.title}: ₹${budget.amount}")
+                Text("- ${budget.name}: ₹${budget.amount}")
             }
         }
     }
