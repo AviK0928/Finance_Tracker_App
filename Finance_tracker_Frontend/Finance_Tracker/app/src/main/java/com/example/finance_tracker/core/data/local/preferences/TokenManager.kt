@@ -39,13 +39,9 @@ class TokenManager @Inject constructor(
         }
     }
 
-    suspend fun getAccessToken(): String {
-        // For demo: fallback to dummy token if missing
-        return context.dataStore.data.first()[ACCESS_TOKEN] ?: "demo-token"
-    }
-
-    suspend fun getAuthHeader(): String {
-        return getAccessToken().let { "Bearer $it" }
+    /** Returns the stored access token, or null when the user is not logged in. */
+    suspend fun getAccessToken(): String? {
+        return context.dataStore.data.first()[ACCESS_TOKEN]
     }
 
 }

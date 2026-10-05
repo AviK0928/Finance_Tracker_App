@@ -41,8 +41,6 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         final String jwt;
         final String username;
 
-        logger.debug("[{}] Authorization header: {}", Instant.now(), authHeader);
-
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             logger.debug("[{}] No JWT token found in request headers.", Instant.now());
             filterChain.doFilter(request, response);
@@ -50,17 +48,6 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         }
 
         jwt = authHeader.substring(7);
-        logger.debug("[{}] Extracted JWT token: {}", Instant.now(), jwt);
-        if ("demo-token".equals(jwt)) {
-            logger.warn("[{}] Bypassing token validation for demo-token", Instant.now());
-            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                    "demoUser", null, java.util.Collections.emptyList()
-            );
-            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authToken);
-            filterChain.doFilter(request, response);
-            return;
-        }
         if (blacklistedTokenRepository.existsByToken(jwt)) {
             logger.warn("[{}] Token is blacklisted, rejecting request", Instant.now());
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token has been invalidated");

@@ -11,6 +11,7 @@ class AuthInterceptor(
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val token = runBlocking { tokenManager.getAccessToken() }
+            ?: return chain.proceed(chain.request()) // not logged in: send without Authorization
 
         val modifiedRequest = chain.request().newBuilder()
             .addHeader("Authorization", "Bearer $token")

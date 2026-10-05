@@ -9,7 +9,6 @@ import com.example.Finance_Tracker.User.entity.PasswordResetToken;
 import com.example.Finance_Tracker.User.entity.User;
 import com.example.Finance_Tracker.User.exception.EmailAlreadyExistsException;
 import com.example.Finance_Tracker.User.exception.InvalidCredentialsException;
-import com.example.Finance_Tracker.User.exception.UserNotFoundException;
 import com.example.Finance_Tracker.User.repository.UserRepository;
 import com.example.Finance_Tracker.Security.JWTService;
 import jakarta.validation.constraints.Email;
@@ -17,6 +16,8 @@ import jakarta.validation.constraints.NotBlank;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -50,21 +51,12 @@ public class UserService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        System.out.println("Received login request:");
-        System.out.println("Email = " + request.getEmail());
-        System.out.println("Password = " + request.getPassword());
-        if (request.getEmail() == null || request.getPassword() == null) {
-            throw new IllegalArgumentException("Email and Password must not be null.");
-        }
-
+        // Same exception and message for "unknown email" and "wrong password",
+        // so the response doesn't reveal which emails have accounts.
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UserNotFoundException("Invalid Email or Password"));
+                .filter(u -> passwordEncoder.matches(request.getPassword(), u.getPassword()))
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new InvalidCredentialsException("Invalid Email or Password");
-        }
-        System.out.println("Authenticated user: " + user.getUsername());
-        System.out.println("Email for JWT: " + user.getEmail());
         String token = jwtService.generateToken(user.getEmail());
         return new AuthResponse(token, user.getEmail());
     }
@@ -83,8 +75,13 @@ public class UserService {
 
 
     public void initiateForgotPassword(ForgotPasswordRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UserNotFoundException("No account with that email."));
+        // Unknown email: return silently. The controller sends the same
+        // "If the email exists..." response either way (no account enumeration).
+        Optional<User> maybeUser = userRepository.findByEmail(request.getEmail());
+        if (maybeUser.isEmpty()) {
+            return;
+        }
+        User user = maybeUser.get();
 
         String token = passwordResetService.generateResetToken(user);
         String resetLink = "https://yourfrontend.com/reset-password?token=" + token;
