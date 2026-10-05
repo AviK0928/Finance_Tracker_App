@@ -23,7 +23,7 @@ class NotificationWebSocketClient(
 
     fun connect() {
         val request = Request.Builder()
-            .url("ws://<your-api-host>/ws") // 👈 Replace with your actual base URL
+            .url("ws://<your-api-host>/ws") // Replace with your actual base URL
             .build()
 
         webSocket = client.newWebSocket(request, object : WebSocketListener() {

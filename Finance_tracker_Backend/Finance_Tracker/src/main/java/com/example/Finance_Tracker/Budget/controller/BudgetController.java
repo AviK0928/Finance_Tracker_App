@@ -14,7 +14,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -27,7 +29,9 @@ public class BudgetController {
     @PostMapping
     public ResponseEntity<BudgetResponseDTO> createBudget(@Valid @RequestBody BudgetCreateDTO dto) {
         BudgetResponseDTO created = budgetService.createBudget(dto);
-        return ResponseEntity.ok(created);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}").buildAndExpand(created.getId()).toUri();
+        return ResponseEntity.created(location).body(created);
     }
 
     @PutMapping("/{id}")

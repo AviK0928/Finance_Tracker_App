@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class TransactionCreateDTO {
 
-    // ✅ Removed userId from client input
+    // Removed userId from client input
 
     @NotBlank(message = "Category Cannot be Blank")
     private String category;
@@ -35,6 +35,6 @@ public class TransactionCreateDTO {
 
     private String description;
 
-    // ✅ Add setter for internal use (SecurityUtils)
+    // Add setter for internal use (SecurityUtils)
     private Long userId;
 }

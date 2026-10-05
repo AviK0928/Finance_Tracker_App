@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class TransactionFilterDTO {
 
-    // ✅ For internal use only – injected in controller
+    // For internal use only – injected in controller
     private Long userId;
 
     private String category;

@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class TransactionUpdateDTO {
 
-    // ✅ Internal use only, set from controller
+    // Internal use only, set from controller
     private Long userId;
 
     @NotBlank(message = "Category Cannot be Blank")

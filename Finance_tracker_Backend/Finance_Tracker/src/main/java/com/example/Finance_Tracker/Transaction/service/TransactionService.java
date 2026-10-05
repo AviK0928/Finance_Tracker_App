@@ -92,7 +92,7 @@ public class TransactionService {
         BigDecimal amount = transaction.getAmount();
         String type = String.valueOf(transaction.getType());
 
-        // 1️⃣ High-Value Expense (> ₹10,000)
+        // 1. High-Value Expense (> ₹10,000)
         if ("EXPENSE".equalsIgnoreCase(type) && amount.compareTo(BigDecimal.valueOf(10000)) > 0) {
             CreateNotificationDTO dto1 = new CreateNotificationDTO();
             dto1.setTitle("High Value Expense");
@@ -103,7 +103,7 @@ public class TransactionService {
             notificationService.createNotification(dto1);
         }
 
-        // 2️⃣ Category Overspend (> ₹5,000 per transaction)
+        // 2. Category Overspend (> ₹5,000 per transaction)
         if ("EXPENSE".equalsIgnoreCase(type) && amount.compareTo(BigDecimal.valueOf(5000)) > 0) {
             String categoryTitle = "Heavy Spending in " + transaction.getCategory();
 
@@ -116,7 +116,7 @@ public class TransactionService {
             notificationService.createNotification(dto2);
         }
 
-        // 3️⃣ Frequent Transactions Today (> 5)
+        // 3. Frequent Transactions Today (> 5)
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startOfDay = now.toLocalDate().atStartOfDay();
         LocalDateTime endOfDay = startOfDay.plusDays(1).minusNanos(1);
@@ -141,7 +141,7 @@ public class TransactionService {
             }
         }
 
-        // 4️⃣ Large Income Notification (> ₹15,000)
+        // 4. Large Income Notification (> ₹15,000)
         if ("INCOME".equalsIgnoreCase(type) && amount.compareTo(BigDecimal.valueOf(15000)) > 0) {
             CreateNotificationDTO dto4 = new CreateNotificationDTO();
             dto4.setTitle("Large Income Received");

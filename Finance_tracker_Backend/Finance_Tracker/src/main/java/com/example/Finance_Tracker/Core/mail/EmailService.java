@@ -31,7 +31,7 @@ public class EmailService {
     }
 
     public void sendWelcomeEmail(String to, String username) {
-        String subject = "Welcome to Quantro 🎉";
+        String subject = "Welcome to Quantro";
         String html = """
                 <p>Hi %s,</p>
                 <p>Welcome to <strong>%s</strong> — your personal finance tracker!</p>

@@ -21,6 +21,7 @@ public class TransactionResponseDTO {
     private String description;
     private BigDecimal amount;
     private TransactionType type;
+    private LocalDateTime transactionDate;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String category;
@@ -33,6 +34,7 @@ public class TransactionResponseDTO {
                 .amount(transaction.getAmount())
                 .type(transaction.getType())
                 .category(transaction.getCategory())
+                .transactionDate(transaction.getTransactionDate())
                 .createdAt(transaction.getCreatedAt())
                 .updatedAt(transaction.getUpdatedAt())
                 .build();

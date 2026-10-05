@@ -3,6 +3,7 @@ package com.example.Finance_Tracker.Transaction.controller;
 import com.example.Finance_Tracker.Security.SecurityUtils;
 import com.example.Finance_Tracker.Transaction.dto.TransactionCreateDTO;
 import com.example.Finance_Tracker.Transaction.dto.TransactionFilterDTO;
+import com.example.Finance_Tracker.Transaction.dto.TransactionResponseDTO;
 import com.example.Finance_Tracker.Transaction.dto.TransactionUpdateDTO;
 import com.example.Finance_Tracker.Transaction.entity.Transaction;
 import com.example.Finance_Tracker.Transaction.service.TransactionService;
@@ -10,11 +11,14 @@ import com.example.Finance_Tracker.Transaction.util.PDFGenerator;
 import com.example.Finance_Tracker.Transaction.util.TransactionType;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.*;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -29,26 +33,28 @@ public class TransactionController {
     }
 
     @PostMapping
-    public ResponseEntity<Transaction> createTransaction(@Valid @RequestBody TransactionCreateDTO dto) {
-        dto.setUserId(SecurityUtils.getCurrentUserId()); // ✅ Inject userId
+    public ResponseEntity<TransactionResponseDTO> createTransaction(@Valid @RequestBody TransactionCreateDTO dto) {
+        dto.setUserId(SecurityUtils.getCurrentUserId()); // Inject userId
         Transaction created = transactionService.createTransaction(dto);
-        return new ResponseEntity<>(created, HttpStatus.CREATED);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}").buildAndExpand(created.getId()).toUri();
+        return ResponseEntity.created(location).body(TransactionResponseDTO.fromEntity(created));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Transaction> getTransactionById(@PathVariable Long id) {
+    public ResponseEntity<TransactionResponseDTO> getTransactionById(@PathVariable Long id) {
         Transaction transaction = transactionService.getTransactionById(id);
-        return ResponseEntity.ok(transaction);
+        return ResponseEntity.ok(TransactionResponseDTO.fromEntity(transaction));
     }
 
-    @GetMapping("/user") // ✅ Removed userId from path
-    public ResponseEntity<List<Transaction>> getAllTransactionsForUser() {
+    @GetMapping("/user") // Removed userId from path
+    public ResponseEntity<List<TransactionResponseDTO>> getAllTransactionsForUser() {
         List<Transaction> transactions = transactionService.getAllTransactionsForUser();
-        return ResponseEntity.ok(transactions);
+        return ResponseEntity.ok(toResponses(transactions));
     }
 
     @GetMapping("/filter")
-    public ResponseEntity<List<Transaction>> getFilteredTransactions(
+    public ResponseEntity<List<TransactionResponseDTO>> getFilteredTransactions(
             @RequestParam(required = false) String category,
             @RequestParam(required = false) TransactionType type,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
@@ -57,7 +63,7 @@ public class TransactionController {
             @RequestParam(required = false) BigDecimal maxAmount
     ) {
         TransactionFilterDTO filter = new TransactionFilterDTO();
-        filter.setUserId(SecurityUtils.getCurrentUserId()); // ✅ Inject userId
+        filter.setUserId(SecurityUtils.getCurrentUserId()); // Inject userId
         filter.setCategory(category);
         filter.setType(type);
         filter.setStartDate(startDate);
@@ -66,15 +72,15 @@ public class TransactionController {
         filter.setMaxAmount(maxAmount);
 
         List<Transaction> filtered = transactionService.getFilteredTransactions(filter);
-        return ResponseEntity.ok(filtered);
+        return ResponseEntity.ok(toResponses(filtered));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Transaction> updateTransaction(
+    public ResponseEntity<TransactionResponseDTO> updateTransaction(
             @PathVariable Long id,
             @Valid @RequestBody TransactionUpdateDTO dto) {
         Transaction updated = transactionService.updateTransaction(id, dto);
-        return ResponseEntity.ok(updated);
+        return ResponseEntity.ok(TransactionResponseDTO.fromEntity(updated));
     }
 
     @DeleteMapping("/{id}")
@@ -84,31 +90,23 @@ public class TransactionController {
     }
 
     @PostMapping("/filter/paginated")
-    public ResponseEntity<Page<Transaction>> getFilteredTransactionsPaginated(
+    public ResponseEntity<Page<TransactionResponseDTO>> getFilteredTransactionsPaginated(
             @Valid @RequestBody TransactionFilterDTO filter,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "transactionDate,desc") String[] sort
+            // Spring Data resolves ?page=&size=&sort=property,direction (same parameter names as before).
+            // The old String[] sort parameter was comma-split by Spring into ["transactionDate", "desc"],
+            // which produced a sort on a non-existent property "desc" and a 400 on every default request.
+            @PageableDefault(size = 10, sort = "transactionDate", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        filter.setUserId(SecurityUtils.getCurrentUserId()); // ✅ Inject userId
+        filter.setUserId(SecurityUtils.getCurrentUserId()); // Inject userId
 
-        List<Sort.Order> orders = new ArrayList<>();
-        for (String sortParam : sort) {
-            String[] sortParts = sortParam.split(",");
-            if (sortParts.length == 2) {
-                orders.add(new Sort.Order(Sort.Direction.fromString(sortParts[1]), sortParts[0]));
-            } else {
-                orders.add(new Sort.Order(Sort.Direction.ASC, sortParts[0]));
-            }
-        }
-        Pageable pageable = PageRequest.of(page, size, Sort.by(orders));
         Page<Transaction> pagedResult = transactionService.getTransactions(pageable, filter);
-        return ResponseEntity.ok(pagedResult);
+        // Page.map keeps the same page JSON shape (content, totalPages, number, ...) the Android client reads
+        return ResponseEntity.ok(pagedResult.map(TransactionResponseDTO::fromEntity));
     }
 
     @PostMapping("/export/pdf")
     public ResponseEntity<byte[]> exportFilteredTransactionsToPDF(@Valid @RequestBody TransactionFilterDTO filter) {
-        filter.setUserId(SecurityUtils.getCurrentUserId()); // ✅ Inject userId
+        filter.setUserId(SecurityUtils.getCurrentUserId()); // Inject userId
 
         List<Transaction> transactions = transactionService.getFilteredTransactions(filter);
 
@@ -122,5 +120,10 @@ public class TransactionController {
                 .build());
 
         return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+    }
+
+    /** API responses never expose the JPA entity (internal fields such as contentHash stay server-side). */
+    private static List<TransactionResponseDTO> toResponses(List<Transaction> transactions) {
+        return transactions.stream().map(TransactionResponseDTO::fromEntity).toList();
     }
 }

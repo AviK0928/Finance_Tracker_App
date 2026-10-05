@@ -47,7 +47,7 @@ public class BudgetResponseDTO {
 
         return BudgetResponseDTO.builder()
                 .id(budget.getId())
-                .userId(budget.getUserId()) // ✅ Corrected
+                .userId(budget.getUserId())
                 .name(budget.getName())
                 .category(budget.getCategory())
                 .amount(amount)

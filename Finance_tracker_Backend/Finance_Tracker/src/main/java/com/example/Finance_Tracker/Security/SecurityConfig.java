@@ -44,6 +44,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/api/test", "/error").permitAll()
+                        // API docs: the spec only describes endpoints; every /api call still needs a JWT
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/transactions/**").authenticated()
                         .requestMatchers("/api/transactions").authenticated()
                         .requestMatchers("/api/sync").authenticated()
