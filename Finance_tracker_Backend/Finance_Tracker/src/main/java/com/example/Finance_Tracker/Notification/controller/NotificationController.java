@@ -23,13 +23,13 @@ public class NotificationController {
     @PostMapping("/{id}/mark-as-read")
     public ResponseEntity<Void> markAsRead(@PathVariable Long id) {
         notificationService.markAsRead(id);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/mark-all-as-read")
     public ResponseEntity<Void> markAllAsRead() {
         notificationService.markAllAsRead();
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/unread/count")
@@ -46,13 +46,13 @@ public class NotificationController {
     @PostMapping("/{id}/archive")
     public ResponseEntity<Void> archiveNotification(@PathVariable Long id) {
         notificationService.archiveNotification(id);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/archive")
     public ResponseEntity<Void> archiveNotifications(@RequestBody List<Long> ids) {
         notificationService.archiveNotifications(ids);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/delete")

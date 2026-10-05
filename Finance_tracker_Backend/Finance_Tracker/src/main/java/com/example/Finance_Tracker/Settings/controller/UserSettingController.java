@@ -50,13 +50,13 @@ public class UserSettingController {
     @PutMapping
     public ResponseEntity<Void> updateSettings(@RequestBody List<UpdateSettingDTO> settings) {
         settingService.updateSettings(settings);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/reset-to-defaults")
     public ResponseEntity<Void> resetToDefaults() {
         settingService.resetSettingsToDefault();
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/logout")
@@ -79,7 +79,7 @@ public class UserSettingController {
                 blacklistedTokenRepository.save(blacklisted);
             }
         }
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/delete-account")

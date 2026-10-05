@@ -225,3 +225,12 @@
 - **Testing:** `UserControllerTest`: weak reset password returns 400 with `fieldErrors.newPassword` and the service is not called; the same weak password is still rejected by register (guards the refactor). Live end-to-end without SMTP: inserted a valid `password_reset_tokens` row for a fresh user with psql (the same row `generateResetToken` creates), then exercised the real endpoint.
 - **Found, deferred:** the regex only allows `@$!%*?&` as special characters (`Pass#1234` is rejected), and there is no maximum length although BCrypt only uses the first 72 bytes. Both would change what registration accepts, so they need a separate decision.
 - **Verified:** backend 66/66; live: weak reset 400 with the policy message, strong reset 200, old password login 401, new password login 200, reusing the token 400.
+
+## 2026-10-05 — Bodyless success responses return 204 (`fix/empty-body-204`)
+
+- **Change:** notification mark-as-read / mark-all-as-read / archive / archive bulk and settings PUT / reset-to-defaults / logout returned `200` with an empty body; now `204 No Content`, consistent with the DELETEs in the same controllers.
+- **Not a client bug (confirmed by reading Android):** every one of these calls is `Response<Unit>`. Retrofit (2.6+) has a built-in `Unit` converter, so a 200 empty body already became `Unit`, and `handleApi` treats a 204 `null` body as `Success(Unit)` (unit 5b). So this is a contract cleanup with no Android change.
+- **Deliberately excluded: import-data.** `ImportService.importUserData` returns an `ImportSummaryDTO` (imported/skipped counts), but `UserSettingService.importDataForUser` is `void` and drops it; Android already has an unused matching `ImportSummaryDTO`. Returning 204 would cement that loss; the right fix is 200 with the summary, done together with the export/import filename mismatch.
+- **Testing:** `NotificationControllerTest` (was an empty placeholder) and new `UserSettingControllerTest`, standalone MockMvc: each endpoint returns 204 with an empty body and calls the service; logout with a Bearer token blacklists exactly that token, without one it saves nothing. Live: a 1000 Food budget plus a 600 Food expense produced a real notification (50% stage) to act on.
+- **Found, deferred:** `updateSettings` takes `@RequestBody List<UpdateSettingDTO>` without `@Valid`, so `@NotNull` on `key`/`value` is never enforced.
+- **Verified:** backend 74/74; live: all seven endpoints `204` with a 0-byte body; the token is rejected (401) after logout.
