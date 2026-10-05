@@ -1,7 +1,6 @@
 package com.example.finance_tracker.features.settings.state
 
 import com.example.finance_tracker.core.network.model.settings.UserSettingDTO
-import com.example.finance_tracker.core.network.model.sync.SyncMetadataDTO
 import java.time.LocalDateTime
 
 data class SettingsState(
@@ -14,7 +13,6 @@ data class SettingsState(
     val pendingExport: ByteArray? = null,
 
     // Sync-specific fields
-    val syncMetadata: SyncMetadataDTO? = null,
     val lastSync: LocalDateTime? = null,
     val isSyncing: Boolean = false
 )

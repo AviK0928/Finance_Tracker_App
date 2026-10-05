@@ -2,7 +2,7 @@ package com.example.finance_tracker.core.di_config
 
 import com.example.finance_tracker.core.data.local.preferences.TokenManager
 import com.example.finance_tracker.core.data.local.room.dao.BudgetDao
-import com.example.finance_tracker.core.data.local.room.dao.SyncMetadataDao
+import com.example.finance_tracker.core.data.local.room.FinanceTrackerDatabase
 import com.example.finance_tracker.core.data.local.room.dao.TransactionDao
 import com.example.finance_tracker.core.data.local.room.dao.UserSettingDao
 import com.example.finance_tracker.core.network.apiendpoints.AuthApi
@@ -24,9 +24,9 @@ import com.example.finance_tracker.features.notification.domain.NotificationRepo
 import com.example.finance_tracker.features.reports.data.ReportRepoImpl
 import com.example.finance_tracker.features.reports.domain.ReportRepo
 import com.example.finance_tracker.features.settings.data.SettingsRepoImpl
-import com.example.finance_tracker.features.settings.data.SyncRepoImpl
 import com.example.finance_tracker.features.settings.domain.SettingsRepo
-import com.example.finance_tracker.features.settings.domain.SyncRepo
+import com.example.finance_tracker.core.sync.SyncRepo
+import com.example.finance_tracker.core.sync.SyncRepoImpl
 import com.example.finance_tracker.features.transactions.data.TransactionRepoImpl
 import com.example.finance_tracker.features.transactions.domain.TransactionRepo
 import dagger.Module
@@ -83,17 +83,8 @@ object AppModule {
     @Singleton
     fun provideSyncRepo(
         syncApi: SyncApi,
-        budgetDao: BudgetDao,
-        transactionDao: TransactionDao,
-        userSettingDao: UserSettingDao,
-        syncMetadataDao: SyncMetadataDao
-    ): SyncRepo = SyncRepoImpl(
-        syncApi,
-        budgetDao,
-        transactionDao,
-        userSettingDao,
-        syncMetadataDao
-    )
+        database: FinanceTrackerDatabase
+    ): SyncRepo = SyncRepoImpl(syncApi, database)
 
     @Provides
     @Singleton

@@ -3,6 +3,7 @@ package com.example.finance_tracker.core.data.local.room
 import androidx.room.TypeConverter
 import com.example.finance_tracker.core.network.model.settings.SettingKey
 import java.math.BigDecimal
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -22,6 +23,12 @@ object RoomTypeConverters {
 
     @TypeConverter
     fun toLocalDateTime(value: String): LocalDateTime = LocalDateTime.parse(value, formatter)
+
+    @TypeConverter
+    fun fromLocalDate(value: LocalDate): String = value.toString()
+
+    @TypeConverter
+    fun toLocalDate(value: String): LocalDate = LocalDate.parse(value)
 
     @TypeConverter
     fun fromSettingKey(key: SettingKey): String = key.name

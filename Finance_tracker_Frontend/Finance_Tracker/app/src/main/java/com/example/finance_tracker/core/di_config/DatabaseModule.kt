@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.example.finance_tracker.core.data.local.room.FinanceTrackerDatabase
 import com.example.finance_tracker.core.data.local.room.dao.BudgetDao
-import com.example.finance_tracker.core.data.local.room.dao.SyncMetadataDao
+import com.example.finance_tracker.core.data.local.room.dao.SyncStateDao
 import com.example.finance_tracker.core.data.local.room.dao.TransactionDao
 import com.example.finance_tracker.core.data.local.room.dao.UserSettingDao
 import dagger.Module
@@ -26,11 +26,15 @@ object DatabaseModule {
             appContext,
             FinanceTrackerDatabase::class.java,
             "finance_tracker_db"
-        ).build()
+        )
+            // Everything in this database is a cache of server data: on a schema change, drop it
+            // and let the next full sync refill it instead of crashing on a missing migration.
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides fun provideBudgetDao(db: FinanceTrackerDatabase): BudgetDao = db.budgetDao()
     @Provides fun provideTransactionDao(db: FinanceTrackerDatabase): TransactionDao = db.transactionDao()
     @Provides fun provideUserSettingDao(db: FinanceTrackerDatabase): UserSettingDao = db.userSettingDao()
-    @Provides fun provideSyncMetadataDao(db: FinanceTrackerDatabase): SyncMetadataDao = db.syncMetadataDao()
+    @Provides fun provideSyncStateDao(db: FinanceTrackerDatabase): SyncStateDao = db.syncStateDao()
 }

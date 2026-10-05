@@ -2,7 +2,6 @@ package com.example.finance_tracker.features.budgets.domain
 
 import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.core.network.model.budget.*
-import com.example.finance_tracker.core.network.model.sync.BudgetDTO
 
 interface BudgetRepo {
     suspend fun createBudget(dto: BudgetCreateDTO): NetworkResult<BudgetResponseDTO>
@@ -14,5 +13,4 @@ interface BudgetRepo {
         status: BudgetStatus? = null,
         frequency: BudgetFrequency? = null
     ): NetworkResult<ByteArray>
-    suspend fun getLocalBudgets(): List<BudgetDTO>
 }

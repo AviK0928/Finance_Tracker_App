@@ -1,7 +1,6 @@
 package com.example.finance_tracker.features.transactions.domain
 
 import com.example.finance_tracker.core.network.NetworkResult
-import com.example.finance_tracker.core.network.model.sync.TransactionDTO
 import com.example.finance_tracker.core.network.model.transaction.*
 
 interface TransactionRepo {
@@ -20,7 +19,6 @@ interface TransactionRepo {
 
     suspend fun updateTransaction(id: Long, dto: TransactionUpdateDTO): NetworkResult<TransactionResponseDTO>
     suspend fun deleteTransaction(id: Long): NetworkResult<Unit>
-    suspend fun getLocalTransactions(): List<TransactionDTO>
     suspend fun getFilteredTransactionsPaginated(
         filter: TransactionFilterDTO,
         page: Int = 0,

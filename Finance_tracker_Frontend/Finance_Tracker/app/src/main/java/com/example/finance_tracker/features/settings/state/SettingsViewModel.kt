@@ -5,9 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.core.network.model.settings.ImportSummaryDTO
 import com.example.finance_tracker.core.network.model.settings.UpdateSettingDTO
-import com.example.finance_tracker.core.network.model.sync.SyncRequestDTO
+import com.example.finance_tracker.core.sync.SyncRepo
 import com.example.finance_tracker.features.settings.domain.SettingsRepo
-import com.example.finance_tracker.features.settings.domain.SyncRepo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,7 +33,7 @@ class SettingsViewModel @Inject constructor(
             is SettingsEvent.DeleteAccount -> deleteAccount()
             is SettingsEvent.ExportData -> exportData()
             is SettingsEvent.ImportData -> importData(event.file, event.filename)
-            is SettingsEvent.PerformSync -> performSync(event.lastSync, event.manual)
+            is SettingsEvent.PerformSync -> performSync()
             is SettingsEvent.ClearError -> _state.update { it.copy(errorMessage = null) }
             is SettingsEvent.ClearInfo -> _state.update { it.copy(infoMessage = null) }
             is SettingsEvent.ExportSaved -> _state.update {
@@ -133,12 +132,11 @@ class SettingsViewModel @Inject constructor(
                 "$settingsImported settings ($skipped already present)"
     }
 
-    private fun performSync(lastSync: LocalDateTime, manual: Boolean) {
+    private fun performSync() {
         viewModelScope.launch {
             _state.update { it.copy(isSyncing = true) }
 
-            val request = SyncRequestDTO(lastSync = lastSync, manualSync = manual)
-            val result = syncRepo.syncData(request)
+            val result = syncRepo.sync()
 
             when (result) {
                 is NetworkResult.Success -> {

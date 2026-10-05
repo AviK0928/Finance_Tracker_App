@@ -159,11 +159,8 @@ fun SettingsScreen(
                 Text("Last Sync: ${state.lastSync ?: "Never"}")
 
                 Button(
-                    onClick = {
-                        state.lastSync?.let {
-                            viewModel.onEvent(SettingsEvent.PerformSync(it, manual = true))
-                        }
-                    },
+                    // Previously only fired when lastSync was set, which only a sync did: it never ran.
+                    onClick = { viewModel.onEvent(SettingsEvent.PerformSync) },
                     enabled = !state.isSyncing,
                     interactionSource = remember { MutableInteractionSource() }
                 ) {

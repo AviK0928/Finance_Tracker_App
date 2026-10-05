@@ -5,7 +5,6 @@ import com.example.finance_tracker.core.network.ApiResponseHandler
 import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.core.network.apiendpoints.BudgetApi
 import com.example.finance_tracker.core.network.model.budget.*
-import com.example.finance_tracker.core.network.model.sync.BudgetDTO
 import com.example.finance_tracker.features.budgets.domain.BudgetRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -37,19 +36,6 @@ class BudgetRepoImpl @Inject constructor(
 
     override suspend fun getBudgetsByUser(): NetworkResult<List<BudgetResponseDTO>> {
         return ApiResponseHandler.handleApi { api.getBudgetsByUser() }
-    }
-
-    override suspend fun getLocalBudgets(): List<BudgetDTO> {
-        return withContext(Dispatchers.IO) {
-            budgetDao.getAllBudgets().map {
-                BudgetDTO(
-                    amount = it.amount,
-                    period = it.period,
-                    updatedAt = it.updatedAt,
-                    contentHash = it.contentHash
-                )
-            }
-        }
     }
 
     override suspend fun exportBudgetsAsPdf(

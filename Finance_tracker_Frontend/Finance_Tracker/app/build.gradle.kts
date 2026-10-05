@@ -42,6 +42,11 @@ android {
         compose = true
     }
 
+    testOptions {
+        // Robolectric (Room tests on the JVM) reads the merged Android resources
+        unitTests.isIncludeAndroidResources = true
+    }
+
     packaging {
         resources {
             excludes += "META-INF/gradle/incremental.annotation.processors"
@@ -92,6 +97,8 @@ dependencies {
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

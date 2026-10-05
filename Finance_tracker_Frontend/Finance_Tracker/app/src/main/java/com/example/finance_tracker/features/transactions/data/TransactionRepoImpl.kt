@@ -1,11 +1,9 @@
 package com.example.finance_tracker.features.transactions.data
 
 import com.example.finance_tracker.core.data.local.room.dao.TransactionDao
-import com.example.finance_tracker.core.data.local.room.entity.TransactionEntity
 import com.example.finance_tracker.core.network.ApiResponseHandler
 import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.core.network.apiendpoints.TransactionApi
-import com.example.finance_tracker.core.network.model.sync.TransactionDTO
 import com.example.finance_tracker.core.network.model.transaction.*
 import com.example.finance_tracker.features.transactions.domain.TransactionRepo
 import kotlinx.coroutines.Dispatchers
@@ -30,19 +28,6 @@ class TransactionRepoImpl(
 
     override suspend fun getCategories(): NetworkResult<List<String>> {
         return ApiResponseHandler.handleApi { api.getCategories() }
-    }
-
-    override suspend fun getLocalTransactions(): List<TransactionDTO> {
-        return withContext(Dispatchers.IO) {
-            transactionDao.getAllTransactions().map {
-                TransactionDTO(
-                    amount = it.amount,
-                    updatedAt = it.updatedAt,
-                    description = it.description,
-                    contentHash = it.contentHash
-                )
-            }
-        }
     }
 
     override suspend fun getFilteredTransactions(
