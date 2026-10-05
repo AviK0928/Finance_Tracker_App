@@ -2,10 +2,13 @@ package com.example.Finance_Tracker.Budget.scheduler;
 
 import com.example.Finance_Tracker.Budget.entity.Budget;
 import com.example.Finance_Tracker.Budget.repository.BudgetRepository;
+import com.example.Finance_Tracker.Budget.util.BudgetStatus;
 import com.example.Finance_Tracker.Notification.dto.CreateNotificationDTO;
 import com.example.Finance_Tracker.Notification.service.NotificationService;
 import com.example.Finance_Tracker.Notification.util.NotificationType;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -13,8 +16,17 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * Daily budget expiry notifications.
+ * Runs without a logged-in user, so notifications are addressed explicitly with
+ * {@link NotificationService#createNotificationForUser(Long, CreateNotificationDTO)}.
+ * Schedules are configurable (see application.properties) so they can be shortened for testing.
+ */
 @Component
 public class BudgetNotificationScheduler {
+
+    private static final Logger log = LoggerFactory.getLogger(BudgetNotificationScheduler.class);
+    static final int NEARING_EXPIRY_DAYS = 3;
 
     @Autowired
     private BudgetRepository budgetRepository;
@@ -22,54 +34,49 @@ public class BudgetNotificationScheduler {
     @Autowired
     private NotificationService notificationService;
 
-    /**
-     * Runs once every day at 9 AM to notify users about expired budgets
-     */
-    @Scheduled(cron = "0 0 9 * * *") // 9:00 AM daily
+    /** Active budgets whose end date has passed and that haven't been announced as expired yet. */
+    @Scheduled(cron = "${budget.notifications.expired-cron}")
     @Transactional
     public void notifyExpiredBudgets() {
-        LocalDate today = LocalDate.now();
+        List<Budget> expired = budgetRepository
+                .findByStatusAndExpiryNotificationSentFalseAndEndDateBefore(BudgetStatus.ACTIVE, LocalDate.now());
 
-        List<Budget> expiredBudgets = budgetRepository.findAll().stream()
-                .filter(budget -> !budget.isExpiryNotificationSent())
-                .filter(budget -> budget.getEndDate().isBefore(today))
-                .toList();
-
-        for (Budget budget : expiredBudgets) {
-            CreateNotificationDTO dto = new CreateNotificationDTO();
-            dto.setTitle("Budget Expired");
-            dto.setMessage("Your budget \"" + budget.getName() + "\" has expired.");
-            dto.setType(NotificationType.ALERT);
-            dto.setReferenceId(budget.getId());
-
-            notificationService.createNotification(dto);
-
+        for (Budget budget : expired) {
+            notificationService.createNotificationForUser(budget.getUserId(), notification(
+                    "Budget Expired",
+                    "Your budget \"" + budget.getName() + "\" has expired.",
+                    NotificationType.ALERT, budget));
             budget.setExpiryNotificationSent(true);
             budgetRepository.save(budget);
         }
+        log.info("Budget expiry job: {} budget(s) notified", expired.size());
     }
 
-    @Scheduled(cron = "0 15 9 * * *") // 9:15 AM daily
+    /** Active budgets ending in exactly NEARING_EXPIRY_DAYS days, not yet announced. */
+    @Scheduled(cron = "${budget.notifications.nearing-expiry-cron}")
     @Transactional
     public void notifyNearingExpiryBudgets() {
-        LocalDate today = LocalDate.now();
-        LocalDate threshold = today.plusDays(3);
+        LocalDate endDate = LocalDate.now().plusDays(NEARING_EXPIRY_DAYS);
+        List<Budget> nearing = budgetRepository
+                .findByStatusAndNearingExpiryNotificationSentFalseAndEndDate(BudgetStatus.ACTIVE, endDate);
 
-        List<Budget> nearingExpiryBudgets = budgetRepository.findAll().stream()
-                .filter(budget -> !budget.isNearingExpiryNotificationSent())
-                .filter(budget -> budget.getEndDate().isEqual(threshold))
-                .toList();
-
-        for (Budget budget : nearingExpiryBudgets) {
-            CreateNotificationDTO dto = new CreateNotificationDTO();
-            dto.setTitle("Budget Nearing Expiry");
-            dto.setMessage("Your budget \"" + budget.getName() + "\" will expire in 3 days.");
-            dto.setType(NotificationType.INFO);
-            dto.setReferenceId(budget.getId());
-
-            notificationService.createNotification(dto);
+        for (Budget budget : nearing) {
+            notificationService.createNotificationForUser(budget.getUserId(), notification(
+                    "Budget Nearing Expiry",
+                    "Your budget \"" + budget.getName() + "\" will expire in " + NEARING_EXPIRY_DAYS + " days.",
+                    NotificationType.INFO, budget));
             budget.setNearingExpiryNotificationSent(true);
             budgetRepository.save(budget);
         }
+        log.info("Budget nearing-expiry job: {} budget(s) notified", nearing.size());
+    }
+
+    private static CreateNotificationDTO notification(String title, String message, NotificationType type, Budget budget) {
+        CreateNotificationDTO dto = new CreateNotificationDTO();
+        dto.setTitle(title);
+        dto.setMessage(message);
+        dto.setType(type);
+        dto.setReferenceId(budget.getId());
+        return dto;
     }
 }

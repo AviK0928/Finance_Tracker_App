@@ -152,3 +152,18 @@
 - **Gotcha:** same scale issue as transactions: budget content hash now uses `amount.setScale(2).toPlainString()` and includes `category`.
 - **Testing:** `@DataJpaTest` + `@AutoConfigureTestDatabase(replace = NONE)` runs the real JPQL against the Flyway-migrated Postgres, in a rolled-back transaction. It covers date boundaries (first instant/last second in; day before/after out), case-insensitive category, income excluded, and the all-categories budget.
 - **Verified:** suite 38/38; Flyway `1,2,3` applied; live: Food budget 650.00 spent / 350.00 remaining / 65%, all-categories budget 2650.00 / 2350.00 / 53%, dashboard remaining 2700.00, end-before-start → 400, budget PDF → 200.
+
+## 2026-10-05 — Budget notifications that actually fire (`feat/budget-alerts`)
+
+- **Problem 1 (confirmed):** 50/90/100% alerts lived in `BudgetService.updateBudget`, so they only ran when a *budget* was edited, never when an expense was recorded, which is the event that actually crosses a threshold.
+- **Problem 2:** three independent `if`s meant one large expense going from 0% to over budget produced three notifications ("50%", "90%", "Exceeded") at once.
+- **Problem 3 (confirmed):** `BudgetNotificationScheduler` called `NotificationService.createNotification(dto)`, which resolves the user from `SecurityContext`. Scheduled jobs run on a scheduler thread with no authenticated user, so both daily jobs threw and no expiry notification was ever sent. They also loaded every budget in the DB and filtered in Java.
+- **Fix:**
+  - `BudgetAlertService`: `stageFor(spent, amount)` gives the highest stage reached. Notify only if it is above `lastNotifiedStage` (one notification per jump, each stage at most once). Called from `TransactionService` create/update for EXPENSE transactions (via `BudgetRepository.findBudgetsCovering`: same user, ACTIVE, date inside range, same category case-insensitive or all-categories budget) and from `BudgetService` create/update.
+  - Scheduler addresses notifications explicitly with `createNotificationForUser(budget.getUserId(), ...)` and uses derived queries (`...ExpiryNotificationSentFalseAndEndDateBefore`, `...NearingExpiryNotificationSentFalseAndEndDate`) instead of `findAll()`.
+  - Cron expressions moved to `budget.notifications.*` properties so they can be overridden from the command line for testing.
+- **Lesson:** anything that runs outside an HTTP request (schedulers, async jobs, event listeners) must not depend on `SecurityContextHolder`; pass the owner id explicitly.
+- **Gotcha:** `Budget`'s `@PrePersist` resets the notification flags on insert, so the repository test sets `expiryNotificationSent = true` via a second `save` (update).
+- **Gotcha:** the VS Code Java extension in Codespaces writes `.vscode/settings.json`, which `git add -A` silently staged. Now in `.gitignore`. Always check `git status` before committing.
+- **Known gap:** `lastNotifiedStage` is not reset when a budget's amount is raised or an expense is deleted, so a stage is never re-announced. Acceptable for now.
+- **Verified:** suite 54/54; live: Food 1000 + expense 1200 → only "Budget Exceeded"; Travel 600 → 50%, +300 → 90%, +50 → nothing; scheduler with a 10 s cron sent "Budget Expired" / "Budget Nearing Expiry" exactly once each (job log 1 then 0), flags set, no exceptions in the log.

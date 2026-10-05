@@ -75,3 +75,6 @@ yarn-error.log
 !**/gradle/wrapper/gradle-wrapper.jar
 # Template for local environment variables (the real .env stays ignored)
 !.env.example
+
+# Editor-local settings (VS Code Java extension writes this in Codespaces)
+.vscode/settings.json

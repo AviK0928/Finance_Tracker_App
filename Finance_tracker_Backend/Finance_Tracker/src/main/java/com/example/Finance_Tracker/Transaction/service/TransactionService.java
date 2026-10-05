@@ -1,5 +1,6 @@
 package com.example.Finance_Tracker.Transaction.service;
 
+import com.example.Finance_Tracker.Budget.service.BudgetAlertService;
 import com.example.Finance_Tracker.Notification.dto.CreateNotificationDTO;
 import com.example.Finance_Tracker.Notification.service.NotificationService;
 import com.example.Finance_Tracker.Notification.util.NotificationType;
@@ -11,6 +12,7 @@ import com.example.Finance_Tracker.Transaction.entity.Transaction;
 import com.example.Finance_Tracker.Transaction.exception.NotFoundException;
 import com.example.Finance_Tracker.Transaction.repository.TransactionRepository;
 import com.example.Finance_Tracker.Transaction.util.TransactionSpecification;
+import com.example.Finance_Tracker.Transaction.util.TransactionType;
 import com.example.Finance_Tracker.User.entity.User;
 import com.example.Finance_Tracker.User.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -37,6 +39,9 @@ public class TransactionService {
 
     @Autowired
     private NotificationService notificationService;
+
+    @Autowired
+    private BudgetAlertService budgetAlertService;
 
     public List<Transaction> getFilteredTransactions(TransactionFilterDTO filter) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
@@ -147,6 +152,7 @@ public class TransactionService {
             notificationService.createNotification(dto4);
         }
 
+        alertBudgetsIfExpense(transaction);
         return transaction;
     }
 
@@ -165,7 +171,17 @@ public class TransactionService {
         if (dto.getDescription() != null) transaction.setDescription(dto.getDescription());
         if (dto.getTransactionDate() != null) transaction.setTransactionDate(dto.getTransactionDate());
 
-        return transactionRepository.save(transaction);
+        Transaction saved = transactionRepository.save(transaction);
+        alertBudgetsIfExpense(saved);
+        return saved;
+    }
+
+    /** Budgets this expense counts towards may have crossed a 50% / 90% / 100% threshold. */
+    private void alertBudgetsIfExpense(Transaction transaction) {
+        if (transaction.getType() == TransactionType.EXPENSE) {
+            budgetAlertService.onExpenseRecorded(transaction.getUserId(), transaction.getCategory(),
+                    transaction.getTransactionDate().toLocalDate());
+        }
     }
 
     public void deleteTransaction(Long id) {
