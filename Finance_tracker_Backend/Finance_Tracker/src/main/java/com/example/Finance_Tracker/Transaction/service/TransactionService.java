@@ -9,8 +9,10 @@ import com.example.Finance_Tracker.Settings.util.SettingKey;
 import com.example.Finance_Tracker.Transaction.dto.TransactionCreateDTO;
 import com.example.Finance_Tracker.Transaction.dto.TransactionFilterDTO;
 import com.example.Finance_Tracker.Transaction.dto.TransactionUpdateDTO;
+import com.example.Finance_Tracker.Transaction.entity.DeletedTransaction;
 import com.example.Finance_Tracker.Transaction.entity.Transaction;
 import com.example.Finance_Tracker.Transaction.exception.NotFoundException;
+import com.example.Finance_Tracker.Transaction.repository.DeletedTransactionRepository;
 import com.example.Finance_Tracker.Transaction.repository.TransactionRepository;
 import com.example.Finance_Tracker.Transaction.util.TransactionSpecification;
 import com.example.Finance_Tracker.Transaction.util.TransactionType;
@@ -44,6 +46,9 @@ public class TransactionService {
 
     @Autowired
     private BudgetAlertService budgetAlertService;
+
+    @Autowired
+    private DeletedTransactionRepository deletedTransactionRepository;
 
     public List<Transaction> getFilteredTransactions(TransactionFilterDTO filter) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
@@ -210,6 +215,8 @@ public class TransactionService {
         }
 
         transactionRepository.delete(transaction);
+        // Same database transaction as the delete: a delta sync (GET /api/sync) tells the app to drop its copy.
+        deletedTransactionRepository.save(new DeletedTransaction(currentUserId, id, LocalDateTime.now()));
         alertBudgetsIfExpense(transaction); // budgets it counted towards may drop below a notified stage
     }
 

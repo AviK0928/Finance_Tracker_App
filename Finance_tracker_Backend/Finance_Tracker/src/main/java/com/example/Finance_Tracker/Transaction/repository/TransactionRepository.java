@@ -35,9 +35,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
         List<TypeTotal> sumAmountByType(@Param("userId") Long userId);
         Page<Transaction> findAll(Specification<Transaction> spec, Pageable pageable);
         List<Transaction> findByUserIdAndTransactionDateBetween(Long userId, LocalDateTime start, LocalDateTime end);
-        List<Transaction> findAllByUserIdAndUpdatedAtAfter(Long userId, LocalDateTime lastSync);
-        @Query("SELECT MAX(t.updatedAt) FROM Transaction t WHERE t.userId = :userId")
-        LocalDateTime findLatestUpdateForUser(@Param("userId") Long userId);
+        /** The user's transactions created or changed after {@code since} (delta sync). */
+        List<Transaction> findByUserIdAndUpdatedAtAfter(Long userId, LocalDateTime since);
         List<Transaction> findAllByUserId(Long userId);
         boolean existsByUserIdAndContentHash(Long userId, String contentHash);
 

@@ -6,7 +6,9 @@ import com.example.Finance_Tracker.Notification.service.NotificationService;
 import com.example.Finance_Tracker.Settings.util.SettingKey;
 import com.example.Finance_Tracker.Transaction.dto.TransactionCreateDTO;
 import com.example.Finance_Tracker.Transaction.dto.TransactionUpdateDTO;
+import com.example.Finance_Tracker.Transaction.entity.DeletedTransaction;
 import com.example.Finance_Tracker.Transaction.entity.Transaction;
+import com.example.Finance_Tracker.Transaction.repository.DeletedTransactionRepository;
 import com.example.Finance_Tracker.Transaction.repository.TransactionRepository;
 import com.example.Finance_Tracker.Transaction.service.TransactionService;
 import com.example.Finance_Tracker.Transaction.util.TransactionType;
@@ -21,6 +23,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -31,6 +34,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -48,6 +52,7 @@ class TransactionServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private NotificationService notificationService;
     @Mock private BudgetAlertService budgetAlertService;
+    @Mock private DeletedTransactionRepository deletedTransactionRepository;
     @InjectMocks private TransactionService transactionService;
 
     @BeforeEach
@@ -111,6 +116,31 @@ class TransactionServiceTest {
 
         verify(transactionRepository).delete(existing);
         verify(budgetAlertService).onExpenseRecorded(USER_ID, "Food", LocalDate.of(2026, 10, 5));
+    }
+
+    @Test
+    void deletingATransaction_recordsItForSync() {
+        when(transactionRepository.findById(99L)).thenReturn(Optional.of(existingExpense()));
+
+        transactionService.deleteTransaction(99L);
+
+        ArgumentCaptor<DeletedTransaction> recorded = ArgumentCaptor.forClass(DeletedTransaction.class);
+        verify(deletedTransactionRepository).save(recorded.capture());
+        assertThat(recorded.getValue().getUserId()).isEqualTo(USER_ID);
+        assertThat(recorded.getValue().getTransactionId()).isEqualTo(99L);
+        assertThat(recorded.getValue().getDeletedAt()).isNotNull();
+    }
+
+    @Test
+    void deletingSomeoneElsesTransaction_isRefused_andRecordsNothing() {
+        Transaction foreign = existingExpense();
+        foreign.setUserId(USER_ID + 1);
+        when(transactionRepository.findById(99L)).thenReturn(Optional.of(foreign));
+
+        assertThatThrownBy(() -> transactionService.deleteTransaction(99L)).isInstanceOf(AccessDeniedException.class);
+
+        verify(transactionRepository, never()).delete(any(Transaction.class));
+        verify(deletedTransactionRepository, never()).save(any());
     }
 
     @Test

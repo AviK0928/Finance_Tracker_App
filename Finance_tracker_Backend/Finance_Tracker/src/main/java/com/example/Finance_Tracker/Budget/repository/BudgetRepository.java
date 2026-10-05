@@ -12,17 +12,13 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
 @Repository
 public interface BudgetRepository extends JpaRepository<Budget, Long>, JpaSpecificationExecutor<Budget> {
     List<Budget> findByUserId(Long userId);
-    List<Budget> findAllByUserIdAndUpdatedAtAfter(Long userId, LocalDateTime lastSync);
     List<Budget> findByUserIdAndStatus(Long userId, BudgetStatus status);
-    @Query("SELECT MAX(b.updatedAt) FROM Budget b WHERE b.userId = :userId")
-    LocalDateTime findLatestUpdateForUser(@Param("userId") Long userId);
     List<Budget> findAllByUserId(Long userId);
     boolean existsByUserIdAndContentHash(@NotNull Long userId, String contentHash);
 

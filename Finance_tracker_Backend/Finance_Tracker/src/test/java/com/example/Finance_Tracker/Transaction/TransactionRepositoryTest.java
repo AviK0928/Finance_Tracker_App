@@ -43,6 +43,20 @@ class TransactionRepositoryTest {
         assertThat(totals.get(TransactionType.EXPENSE)).isEqualByComparingTo("50.00");
     }
 
+    @Test
+    void findByUserIdAndUpdatedAtAfter_returnsOnlyThatUsersRowsChangedInTheWindow() {
+        Long userId = newUser();
+        Long otherUserId = newUser();
+        LocalDateTime before = LocalDateTime.now().minusMinutes(1);
+        save(userId, TransactionType.EXPENSE, "10.00");
+        save(otherUserId, TransactionType.EXPENSE, "20.00");
+
+        assertThat(transactionRepository.findByUserIdAndUpdatedAtAfter(userId, before))
+                .extracting(Transaction::getUserId).containsExactly(userId);
+        assertThat(transactionRepository.findByUserIdAndUpdatedAtAfter(userId, LocalDateTime.now().plusMinutes(1)))
+                .isEmpty();
+    }
+
     private Long newUser() {
         return userRepository.save(User.builder()
                 .email("tx-repo-" + System.nanoTime() + "@example.com")

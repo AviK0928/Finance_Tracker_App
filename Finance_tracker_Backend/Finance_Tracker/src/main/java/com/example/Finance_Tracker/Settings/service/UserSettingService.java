@@ -121,20 +121,4 @@ public class UserSettingService {
     public ImportSummaryDTO importDataForUser(MultipartFile file, Long userId) {
         return importService.importUserData(file, userId);
     }
-
-    public List<UserSettingDTO> getAllSettingsForUser(Long userId) {
-        List<UserSetting> settings = settingRepository.findByUserId(userId);
-
-        Map<SettingKey, String> all = new EnumMap<>(DEFAULTS);
-        for (UserSetting setting : settings) {
-            all.put(setting.getKey(), setting.getValue());
-        }
-
-        return all.entrySet().stream().map(entry -> {
-            UserSettingDTO dto = new UserSettingDTO();
-            dto.setKey(entry.getKey());
-            dto.setValue(entry.getValue());
-            return dto;
-        }).toList();
-    }
 }

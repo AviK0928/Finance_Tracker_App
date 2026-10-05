@@ -1,105 +1,82 @@
 package com.example.Finance_Tracker.Sync.service;
 
-import com.example.Finance_Tracker.Budget.entity.Budget;
-import com.example.Finance_Tracker.Budget.repository.BudgetRepository;
-import com.example.Finance_Tracker.Notification.dto.CreateNotificationDTO;
-import com.example.Finance_Tracker.Notification.service.NotificationService;
-import com.example.Finance_Tracker.Notification.util.NotificationType;
-import com.example.Finance_Tracker.Settings.util.SettingKey;
-import com.example.Finance_Tracker.Settings.dto.UserSettingDTO;
-import com.example.Finance_Tracker.Settings.service.UserSettingService;
-import com.example.Finance_Tracker.Sync.dto.*;
-import com.example.Finance_Tracker.Sync.mapper.BudgetMapper;
-import com.example.Finance_Tracker.Sync.mapper.TransactionMapper;
-import com.example.Finance_Tracker.Sync.util.HashUtils;
+import com.example.Finance_Tracker.Budget.service.BudgetService;
+import com.example.Finance_Tracker.Security.SecurityUtils;
+import com.example.Finance_Tracker.Sync.dto.SyncResponseDTO;
+import com.example.Finance_Tracker.Transaction.dto.TransactionResponseDTO;
 import com.example.Finance_Tracker.Transaction.entity.Transaction;
+import com.example.Finance_Tracker.Transaction.repository.DeletedTransactionRepository;
 import com.example.Finance_Tracker.Transaction.repository.TransactionRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Collections;
+import java.time.format.DateTimeParseException;
 import java.util.List;
-import java.util.stream.Collectors;
 
+/**
+ * Read-only sync for the app's offline cache.
+ * <ul>
+ *   <li>Transactions: changes since the cursor plus the ids deleted since then; everything without a cursor.</li>
+ *   <li>Budgets: always all of them. Their spending changes whenever a transaction changes, without the
+ *       budget row changing, so "budgets changed since X" would leave stale numbers on the phone.</li>
+ * </ul>
+ * The cursor is the server time taken before the reads, so the phone's clock never matters.
+ */
 @Service
+@RequiredArgsConstructor
 public class SyncService {
 
-    @Autowired
-    private BudgetRepository budgetRepository;
+    /**
+     * Rows changed up to this long before the cursor are sent again. Covers a write whose timestamp was
+     * taken before the previous sync read but which committed after it. Re-sent rows are harmless:
+     * the app stores by id.
+     */
+    static final Duration OVERLAP = Duration.ofMinutes(2);
 
-    @Autowired
-    private TransactionRepository transactionRepository;
+    private final TransactionRepository transactionRepository;
+    private final DeletedTransactionRepository deletedTransactionRepository;
+    private final BudgetService budgetService;
 
-    @Autowired
-    private NotificationService notificationService;
+    public SyncResponseDTO sync(String cursor) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            throw new IllegalStateException("User not authenticated");
+        }
+        LocalDateTime now = LocalDateTime.now();
+        boolean fullSync = cursor == null || cursor.isBlank();
 
-    @Autowired
-    private UserSettingService userSettingService; // Must implement getAllSettingsForUser(userId)
-
-    private static final int LARGE_SYNC_THRESHOLD = 100;
-
-    public SyncResponseDTO syncData(Long userId, SyncRequestDTO request) {
-        LocalDateTime lastSync = request.getLastSync();
-
-        if (lastSync == null || lastSync.isAfter(LocalDateTime.now())) {
-            throw new IllegalArgumentException("Invalid sync timestamp.");
+        List<Transaction> transactions;
+        List<Long> deletedIds;
+        if (fullSync) {
+            transactions = transactionRepository.findByUserId(userId);
+            deletedIds = List.of();
+        } else {
+            LocalDateTime since = parseCursor(cursor, now).minus(OVERLAP);
+            transactions = transactionRepository.findByUserIdAndUpdatedAtAfter(userId, since);
+            deletedIds = deletedTransactionRepository.findTransactionIdsDeletedSince(userId, since);
         }
 
-        if (request.isManualSync()) {
-            CreateNotificationDTO start = new CreateNotificationDTO();
-            start.setTitle("Sync Started");
-            start.setMessage("Your finance data sync has started.");
-            start.setType(NotificationType.INFO);
-            start.setPreference(SettingKey.NOTIFY_SYNC_EVENTS);
-            notificationService.createNotificationForUser(userId, start);
-        }
-
-        List<Budget> recentBudgets = budgetRepository.findAllByUserIdAndUpdatedAtAfter(userId, lastSync);
-        List<Transaction> recentTransactions = transactionRepository.findAllByUserIdAndUpdatedAtAfter(userId, lastSync);
-
-        List<BudgetDTO> updatedBudgets = recentBudgets.stream()
-                .map(budget -> {
-                    BudgetDTO dto = BudgetMapper.toDTO(budget);
-                    dto.setContentHash(HashUtils.computeBudgetHash(budget));
-                    return dto;
-                })
-                .collect(Collectors.toList());
-
-        List<TransactionDTO> updatedTransactions = recentTransactions.stream()
-                .map(transaction -> {
-                    TransactionDTO dto = TransactionMapper.toDTO(transaction);
-                    dto.setContentHash(HashUtils.computeTransactionHash(transaction));
-                    return dto;
-                })
-                .collect(Collectors.toList());
-
-        SyncMetadataDTO metadata = getSyncMetadata(userId);
-        List<UserSettingDTO> settings = userSettingService.getAllSettingsForUser(userId); // provide userId version
-
-        SyncResponseDTO response = new SyncResponseDTO();
-        response.setBudgets(updatedBudgets);
-        response.setTransactions(updatedTransactions);
-        response.setMetadata(metadata);
-        response.setSettings(settings);
-        response.setLargeSync(updatedBudgets.size() + updatedTransactions.size() > LARGE_SYNC_THRESHOLD);
-
-        if (request.isManualSync()) {
-            CreateNotificationDTO done = new CreateNotificationDTO();
-            done.setTitle("Sync Complete");
-            done.setMessage("Your data has been synced successfully.");
-            done.setType(NotificationType.SYNC_SUCCESS);
-            done.setPreference(SettingKey.NOTIFY_SYNC_EVENTS);
-            notificationService.createNotificationForUser(userId, done);
-        }
-
-        return response;
+        return new SyncResponseDTO(
+                now.toString(),
+                fullSync,
+                transactions.stream().map(TransactionResponseDTO::fromEntity).toList(),
+                deletedIds,
+                budgetService.getBudgetsByUser());
     }
 
-    public SyncMetadataDTO getSyncMetadata(Long userId) {
-        LocalDateTime latestBudgetUpdate = budgetRepository.findLatestUpdateForUser(userId);
-        LocalDateTime latestTransactionUpdate = transactionRepository.findLatestUpdateForUser(userId);
-
-        return new SyncMetadataDTO(latestBudgetUpdate, latestTransactionUpdate);
+    /** A cursor is only ever one this server returned: a past local date-time. */
+    private static LocalDateTime parseCursor(String cursor, LocalDateTime now) {
+        LocalDateTime parsed;
+        try {
+            parsed = LocalDateTime.parse(cursor);
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Invalid sync cursor");
+        }
+        if (parsed.isAfter(now)) {
+            throw new IllegalArgumentException("Invalid sync cursor");
+        }
+        return parsed;
     }
 }
