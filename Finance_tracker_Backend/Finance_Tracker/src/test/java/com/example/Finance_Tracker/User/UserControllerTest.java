@@ -2,6 +2,7 @@ package com.example.Finance_Tracker.User;
 
 import com.example.Finance_Tracker.Core.exception.GlobalExceptionHandler;
 import com.example.Finance_Tracker.User.controller.UserController;
+import com.example.Finance_Tracker.User.dto.PasswordRules;
 import com.example.Finance_Tracker.User.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -77,5 +79,33 @@ class UserControllerTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Invalid or expired reset token"));
+    }
+
+    @Test
+    void resetPassword_withWeakPassword_returns400_andServiceIsNotCalled() throws Exception {
+        // 9 characters, so only the pattern rule (no uppercase, no special character) fails
+        mockMvc.perform(post("/api/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"token":"abc","newPassword":"password1"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.newPassword").value(PasswordRules.PATTERN_MESSAGE));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
+    void register_withWeakPassword_returns400_andServiceIsNotCalled() throws Exception {
+        // Guards the shared rule: registration must keep rejecting the same password
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"weak","email":"weak@example.com","password":"password1"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.password").value(PasswordRules.PATTERN_MESSAGE));
+
+        verifyNoInteractions(userService);
     }
 }
