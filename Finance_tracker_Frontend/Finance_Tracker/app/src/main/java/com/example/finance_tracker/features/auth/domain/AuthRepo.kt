@@ -7,10 +7,15 @@ import com.example.finance_tracker.core.network.model.auth.MessageResponseDTO
 import com.example.finance_tracker.core.network.model.auth.LoginRequestDTO
 import com.example.finance_tracker.core.network.model.auth.RegisterRequestDTO
 import com.example.finance_tracker.core.network.model.auth.ResetPasswordRequestDTO
+import kotlinx.coroutines.flow.Flow
 
 interface AuthRepo {
     suspend fun register(request: RegisterRequestDTO): NetworkResult<AuthResponseDTO>
     suspend fun login(request: LoginRequestDTO): NetworkResult<AuthResponseDTO>
     suspend fun forgotPassword(request: ForgotPasswordRequestDTO): NetworkResult<MessageResponseDTO>
     suspend fun resetPassword(request: ResetPasswordRequestDTO): NetworkResult<MessageResponseDTO>
+
+    /** True after the server ended the session (401), until the next login or a dismiss. */
+    val sessionExpired: Flow<Boolean>
+    suspend fun dismissSessionExpired()
 }

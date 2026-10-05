@@ -28,6 +28,13 @@ fun AuthScreen(
     }
 
     FormSection(title = if (state.isLoginMode) "Login" else "Register") {
+        if (state.sessionExpired) {
+            ErrorMessage(
+                message = "Your session has expired. Please log in again.",
+                onDismiss = { viewModel.onEvent(AuthEvent.DismissSessionExpired) }
+            )
+        }
+
         if (!state.isLoginMode) {
             TextFieldWithLabels(
                 label = "Name",

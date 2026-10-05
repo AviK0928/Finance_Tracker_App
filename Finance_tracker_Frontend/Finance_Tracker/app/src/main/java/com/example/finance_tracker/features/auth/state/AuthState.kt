@@ -11,5 +11,6 @@ data class AuthState(
     val resetToken: String = "",
     val forgotPasswordSuccess: Boolean = false,
     val resetPasswordSuccess: Boolean = false,
-    val forgotResetMessage: String? = null
+    val forgotResetMessage: String? = null,
+    val sessionExpired: Boolean = false
 )

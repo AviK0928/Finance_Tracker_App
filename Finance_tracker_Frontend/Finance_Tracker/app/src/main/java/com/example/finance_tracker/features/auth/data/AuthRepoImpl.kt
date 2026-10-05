@@ -12,6 +12,7 @@ import com.example.finance_tracker.core.network.model.auth.ForgotPasswordRequest
 import com.example.finance_tracker.core.network.model.auth.MessageResponseDTO
 import com.example.finance_tracker.core.network.model.auth.ResetPasswordRequestDTO
 import com.example.finance_tracker.features.auth.domain.AuthRepo
+import kotlinx.coroutines.flow.Flow
 
 class AuthRepoImpl(
     private val authApi: AuthApi,
@@ -41,4 +42,8 @@ class AuthRepoImpl(
     override suspend fun resetPassword(request: ResetPasswordRequestDTO): NetworkResult<MessageResponseDTO> {
         return ApiResponseHandler.handleApi { authApi.resetPassword(request) }
     }
+
+    override val sessionExpired: Flow<Boolean> = tokenManager.sessionExpired
+
+    override suspend fun dismissSessionExpired() = tokenManager.dismissSessionExpired()
 }

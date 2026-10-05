@@ -23,6 +23,14 @@ class AuthViewModel @Inject constructor(
     private val _state = MutableStateFlow(AuthState())
     val state: StateFlow<AuthState> = _state
 
+    init {
+        viewModelScope.launch {
+            repository.sessionExpired.collect { expired ->
+                _state.update { it.copy(sessionExpired = expired) }
+            }
+        }
+    }
+
     fun onEvent(event: AuthEvent) {
         when (event) {
             is AuthEvent.OnNameChanged -> _state.update { it.copy(name = event.name) }
@@ -39,6 +47,7 @@ class AuthViewModel @Inject constructor(
             AuthEvent.ResetPasswordSubmit -> resetPasswordSubmit()
             AuthEvent.Submit -> submit()
             is AuthEvent.ClearError -> _state.update { it.copy(errorMessage = null) }
+            AuthEvent.DismissSessionExpired -> viewModelScope.launch { repository.dismissSessionExpired() }
             is AuthEvent.Submit -> submit()
 
         }

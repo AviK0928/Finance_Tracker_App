@@ -10,4 +10,5 @@ sealed class AuthEvent {
     object ForgotPasswordSubmit : AuthEvent()
     data class OnResetTokenChanged(val token: String) : AuthEvent()
     object ResetPasswordSubmit : AuthEvent()
+    object DismissSessionExpired : AuthEvent()
 }
