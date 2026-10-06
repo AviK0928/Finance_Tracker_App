@@ -78,7 +78,7 @@ cd Finance_tracker_Frontend/Finance_Tracker
 ./gradlew :app:assembleDebug
 ```
 
-The APK is written to `app/build/outputs/apk/debug/app-debug.apk`. To use it on a phone against the Codespace backend, add the forwarded address to `local.properties` (gitignored) before building, and make port 8080 public only while testing:
+The APK is written to `app/build/outputs/apk/debug/app-debug.apk`. By default it talks to the deployed backend (see [Deployment](#deployment)). To use it against the Codespace backend instead, add the forwarded address to `local.properties` (gitignored) before building, and make port 8080 public only while testing:
 
 ```
 financeTracker.baseUrl=https://<codespace-name>-8080.app.github.dev/
@@ -108,7 +108,20 @@ set -a; source .env; set +a
 (cd Finance_tracker_Frontend/Finance_Tracker && ./gradlew testDebugUnitTest assembleDebug)
 ```
 
-[GitHub Actions](.github/workflows/ci.yml) runs both on every push: the backend against a PostgreSQL 16 service container, the Android job with the `GOOGLE_SERVICES_JSON` **Actions** secret (Actions secrets are separate from Codespaces secrets).
+[GitHub Actions](.github/workflows/ci.yml) runs both on every push to `main` and on pull requests (and on demand from the Actions tab): the backend against a PostgreSQL 16 service container, the Android job with the `GOOGLE_SERVICES_JSON` **Actions** secret (Actions secrets are separate from Codespaces secrets).
+
+## Deployment
+
+The API runs on [Render](https://render.com) (free web service, built from `Finance_tracker_Backend/Finance_Tracker/Dockerfile`) with a [Neon](https://neon.tech) Postgres 16 database, and redeploys on every push to `main`. Release builds of the app (and debug builds without a `local.properties` override) use it.
+
+- API: `https://quantro-api-exp3.onrender.com` (smoke test: `/api/test`; Swagger UI: `/swagger-ui.html`)
+- Configuration is set in Render's environment: `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `FIREBASE_SERVICE_ACCOUNT_JSON`. Render sets `PORT`; the server reads it.
+
+Free-tier limits:
+
+- After 15 minutes without traffic the service sleeps; the next request waits for a cold start (about 1.5 minutes).
+- The scheduled budget-expiry notifications do not run while it sleeps.
+- Outgoing SMTP is blocked on free services, so password-reset emails are not sent from the deployed backend.
 
 ## Configuration
 

@@ -10,15 +10,15 @@ plugins {
     alias(libs.plugins.google.services)
 }
 
-// Debug builds read the backend URL from local.properties (gitignored, so a Codespace address is
-// never committed), e.g. financeTracker.baseUrl=https://<codespace>-8080.app.github.dev/
-// Release builds keep the placeholder until deployment.
+// Release builds use the deployed backend (Render). Debug builds use it too, unless local.properties
+// (gitignored, so a Codespace address is never committed) points them elsewhere, e.g.
+// financeTracker.baseUrl=https://<codespace>-8080.app.github.dev/
 val localProperties = Properties().apply {
     val file = rootProject.file("local.properties")
     if (file.exists()) file.inputStream().use { load(it) }
 }
-val placeholderBaseUrl = "https://api.yourdomain.com/"
-val debugBaseUrl = (localProperties.getProperty("financeTracker.baseUrl") ?: placeholderBaseUrl)
+val productionBaseUrl = "https://quantro-api-exp3.onrender.com/"
+val debugBaseUrl = (localProperties.getProperty("financeTracker.baseUrl") ?: productionBaseUrl)
     .trim()
     .let { if (it.endsWith("/")) it else "$it/" } // Retrofit requires a trailing slash
 
@@ -40,7 +40,7 @@ android {
             buildConfigField("String", "BASE_URL", "\"$debugBaseUrl\"")
         }
         release {
-            buildConfigField("String", "BASE_URL", "\"$placeholderBaseUrl\"")
+            buildConfigField("String", "BASE_URL", "\"$productionBaseUrl\"")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
