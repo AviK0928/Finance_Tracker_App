@@ -2,6 +2,7 @@ package com.example.finance_tracker.features.transactions.domain
 
 import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.core.network.model.transaction.*
+import java.math.BigDecimal
 
 interface TransactionRepo {
     suspend fun createTransaction(dto: TransactionCreateDTO): NetworkResult<TransactionResponseDTO>
@@ -13,8 +14,8 @@ interface TransactionRepo {
         type: TransactionType? = null,
         startDate: String? = null,
         endDate: String? = null,
-        minAmount: Double? = null,
-        maxAmount: Double? = null
+        minAmount: BigDecimal? = null,
+        maxAmount: BigDecimal? = null
     ): NetworkResult<List<TransactionResponseDTO>>
 
     suspend fun updateTransaction(id: Long, dto: TransactionUpdateDTO): NetworkResult<TransactionResponseDTO>

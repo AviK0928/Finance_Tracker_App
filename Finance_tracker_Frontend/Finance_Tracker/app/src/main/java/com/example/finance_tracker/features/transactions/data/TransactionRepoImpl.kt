@@ -11,6 +11,7 @@ import com.example.finance_tracker.core.sync.SyncTrigger
 import com.example.finance_tracker.features.transactions.domain.TransactionRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.math.BigDecimal
 
 class TransactionRepoImpl(
     private val api: TransactionApi,
@@ -39,8 +40,8 @@ class TransactionRepoImpl(
         type: TransactionType?,
         startDate: String?,
         endDate: String?,
-        minAmount: Double?,
-        maxAmount: Double?
+        minAmount: BigDecimal?,
+        maxAmount: BigDecimal?
     ): NetworkResult<List<TransactionResponseDTO>> {
         return ApiResponseHandler.handleApi {
             api.getFilteredTransactions(category, type, startDate, endDate, minAmount, maxAmount)

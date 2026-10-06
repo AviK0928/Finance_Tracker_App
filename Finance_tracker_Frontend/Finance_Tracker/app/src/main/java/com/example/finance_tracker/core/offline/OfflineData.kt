@@ -34,7 +34,7 @@ object OfflineData {
 
     /**
      * Mirrors backend DashboardService: all-time totals per type, active budgets, newest five by creation.
-     * Totals are summed as BigDecimal (from each amount's decimal form) so they do not drift like Double sums.
+     * Amounts are BigDecimal end to end, so the totals are exact (no Double drift).
      */
     fun dashboard(
         transactions: List<TransactionResponseDTO>,
@@ -43,8 +43,7 @@ object OfflineData {
         var income = BigDecimal.ZERO
         var expense = BigDecimal.ZERO
         for (t in transactions) {
-            val amount = BigDecimal.valueOf(t.amount)
-            if (t.type == TransactionType.INCOME) income += amount else expense += amount
+            if (t.type == TransactionType.INCOME) income += t.amount else expense += t.amount
         }
         val recent = transactions
             .sortedWith(compareByDescending<TransactionResponseDTO> { it.createdAt }.thenByDescending { it.id })

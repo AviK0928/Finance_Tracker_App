@@ -28,7 +28,7 @@ class OfflineDataTest {
         val filter = TransactionFilterDTO(
             category = "Food", type = TransactionType.EXPENSE,
             startDate = day.minusDays(1), endDate = day,
-            minAmount = 50.0, maxAmount = 100.0
+            minAmount = BigDecimal("50"), maxAmount = BigDecimal("100")
         )
 
         val result = OfflineData.filterTransactions(all, filter)
@@ -79,13 +79,13 @@ class OfflineDataTest {
         id: Long, type: TransactionType, category: String, amount: Double, date: LocalDateTime,
         created: LocalDateTime = date
     ) = TransactionResponseDTO(
-        id = id, userId = 1, amount = amount, category = category, type = type,
+        id = id, userId = 1, amount = BigDecimal.valueOf(amount), category = category, type = type,
         transactionDate = date, description = null, createdAt = created, updatedAt = created
     )
 
     private fun budget(id: Long, status: BudgetStatus) = BudgetResponseDTO(
-        id = id, userId = 1, name = "B$id", category = null, amount = 100.0,
-        spentAmount = 0.0, remainingAmount = 100.0, percentageSpent = 0.0,
+        id = id, userId = 1, name = "B$id", category = null, amount = BigDecimal("100.00"),
+        spentAmount = BigDecimal.ZERO, remainingAmount = BigDecimal("100.00"), percentageSpent = 0.0,
         startDate = LocalDate.of(2026, 10, 1), endDate = LocalDate.of(2026, 10, 31), notes = null,
         budgetFrequency = BudgetFrequency.MONTHLY, budgetStatus = status,
         createdAt = day, updatedAt = day

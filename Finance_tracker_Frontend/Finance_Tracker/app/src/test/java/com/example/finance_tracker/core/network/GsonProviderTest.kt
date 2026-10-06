@@ -7,6 +7,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -24,11 +25,27 @@ class GsonProviderTest {
         val dto = gson.fromJson(json, TransactionResponseDTO::class.java)
 
         assertEquals(118L, dto.id)
-        assertEquals(250.75, dto.amount, 0.0)
+        assertEquals(BigDecimal("250.75"), dto.amount)
         assertEquals(TransactionType.EXPENSE, dto.type)
         assertEquals(LocalDateTime.of(2026, 10, 5, 10, 0), dto.transactionDate)
         assertEquals(LocalDateTime.of(2026, 10, 5, 5, 9, 33, 210_518_880), dto.createdAt)
         assertEquals("Lunch", dto.description)
+    }
+
+    @Test
+    fun largeAmount_isReadAndWrittenExactly() {
+        // NUMERIC(19,2) allows 17 integer digits; a Double keeps only about 15-16 significant digits
+        val json = """{"id":1,"userId":1,"amount":12345678901234567.89,"type":"INCOME","category":"Salary",
+            "transactionDate":"2026-10-05T10:00:00","createdAt":"2026-10-05T10:00:00",
+            "updatedAt":"2026-10-05T10:00:00","description":null}"""
+
+        val dto = gson.fromJson(json, TransactionResponseDTO::class.java)
+        val request = gson.toJson(
+            TransactionCreateDTO(dto.amount, "Salary", TransactionType.INCOME, dto.transactionDate, "")
+        )
+
+        assertEquals(BigDecimal("12345678901234567.89"), dto.amount)
+        assertTrue(request, request.contains("\"amount\":12345678901234567.89"))
     }
 
     @Test
@@ -45,7 +62,7 @@ class GsonProviderTest {
     @Test
     fun serializesRequestDatesAsIsoStrings() {
         val dto = TransactionCreateDTO(
-            amount = 250.75,
+            amount = BigDecimal("250.75"),
             category = "Food",
             type = TransactionType.EXPENSE,
             transactionDate = LocalDateTime.of(2026, 10, 5, 10, 0),

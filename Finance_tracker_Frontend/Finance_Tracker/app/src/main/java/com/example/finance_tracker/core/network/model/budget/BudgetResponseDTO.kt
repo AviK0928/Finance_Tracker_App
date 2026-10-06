@@ -1,5 +1,6 @@
 package com.example.finance_tracker.core.network.model.budget
 
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -9,10 +10,10 @@ data class BudgetResponseDTO(
     val userId: Long,
     val name: String,
     val category: String?, // optional on the backend; null means "all expense categories"
-    val amount: Double,
-    val spentAmount: Double,
-    val remainingAmount: Double,
-    val percentageSpent: Double,
+    val amount: BigDecimal,
+    val spentAmount: BigDecimal,
+    val remainingAmount: BigDecimal,
+    val percentageSpent: Double, // a Double on the backend too (rounded percentage, not money)
     val startDate: LocalDate,
     val endDate: LocalDate,
     val notes: String?,

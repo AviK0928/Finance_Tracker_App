@@ -4,6 +4,7 @@ import com.example.finance_tracker.core.network.model.transaction.*
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.*
+import java.math.BigDecimal
 
 interface TransactionApi {
 
@@ -29,8 +30,8 @@ interface TransactionApi {
         @Query("type") type: TransactionType? = null,
         @Query("startDate") startDate: String? = null, // ISO 8601
         @Query("endDate") endDate: String? = null,
-        @Query("minAmount") minAmount: Double? = null,
-        @Query("maxAmount") maxAmount: Double? = null
+        @Query("minAmount") minAmount: BigDecimal? = null,
+        @Query("maxAmount") maxAmount: BigDecimal? = null
     ): Response<List<TransactionResponseDTO>>
 
     @PUT("/api/transactions/{id}")

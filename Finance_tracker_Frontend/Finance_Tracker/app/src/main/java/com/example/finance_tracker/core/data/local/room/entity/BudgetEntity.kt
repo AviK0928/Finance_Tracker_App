@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.example.finance_tracker.core.network.model.budget.BudgetFrequency
 import com.example.finance_tracker.core.network.model.budget.BudgetStatus
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -14,9 +15,9 @@ data class BudgetEntity(
     val userId: Long,
     val name: String,
     val category: String?,
-    val amount: Double,
-    val spentAmount: Double,
-    val remainingAmount: Double,
+    val amount: BigDecimal,
+    val spentAmount: BigDecimal,
+    val remainingAmount: BigDecimal,
     val percentageSpent: Double,
     val startDate: LocalDate,
     val endDate: LocalDate,

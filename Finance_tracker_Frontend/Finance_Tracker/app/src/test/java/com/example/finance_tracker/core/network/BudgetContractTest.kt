@@ -10,6 +10,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -31,9 +32,9 @@ class BudgetContractTest {
         assertEquals(7L, dto.id)
         assertEquals("Groceries", dto.name)
         assertEquals("Food", dto.category)
-        assertEquals(5000.0, dto.amount, 0.0)
-        assertEquals(1250.5, dto.spentAmount, 0.0)
-        assertEquals(3749.5, dto.remainingAmount, 0.0)
+        assertEquals(BigDecimal("5000.00"), dto.amount)
+        assertEquals(BigDecimal("1250.50"), dto.spentAmount)
+        assertEquals(BigDecimal("3749.50"), dto.remainingAmount)
         assertEquals(25.01, dto.percentageSpent, 0.0)
         assertEquals(LocalDate.of(2026, 10, 1), dto.startDate)
         assertEquals(LocalDate.of(2026, 10, 31), dto.endDate)
@@ -64,7 +65,7 @@ class BudgetContractTest {
         val dto = BudgetCreateDTO(
             name = "Groceries",
             category = null,
-            amount = 5000.0,
+            amount = BigDecimal("5000.00"),
             startDate = LocalDate.of(2026, 10, 1),
             endDate = LocalDate.of(2026, 10, 31),
             frequency = BudgetFrequency.MONTHLY
@@ -85,7 +86,7 @@ class BudgetContractTest {
         val dto = BudgetUpdateDTO(
             name = "Groceries",
             category = "Food",
-            amount = 6000.0,
+            amount = BigDecimal("6000.00"),
             startDate = LocalDate.of(2026, 10, 1),
             endDate = LocalDate.of(2026, 10, 31),
             frequency = BudgetFrequency.MONTHLY,

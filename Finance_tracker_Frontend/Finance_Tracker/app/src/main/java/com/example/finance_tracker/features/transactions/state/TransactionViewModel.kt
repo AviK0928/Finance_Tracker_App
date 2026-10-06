@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.finance_tracker.core.data.model.DefaultCategories
 import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.core.network.model.transaction.*
+import com.example.finance_tracker.core.util.hasMoreThanTwoDecimals
+import com.example.finance_tracker.core.util.toMoney
 import com.example.finance_tracker.features.transactions.domain.TransactionRepo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -122,14 +124,15 @@ class TransactionViewModel @Inject constructor(
 
     private fun submitForm() {
         val state = _state.value
-        val amount = state.formAmount.toDoubleOrNull()
+        val amount = state.formAmount.trim().toBigDecimalOrNull()
         val date = runCatching {
             LocalDateTime.parse(state.formDate, DateTimeFormatter.ISO_DATE_TIME)
         }.getOrNull()
 
         // Say what is wrong; a plain "Invalid input" left the user guessing
         val problem = when {
-            amount == null || amount <= 0.0 -> "Enter an amount greater than 0"
+            amount == null || amount.signum() <= 0 -> "Enter an amount greater than 0"
+            amount != null && amount.hasMoreThanTwoDecimals() -> "Amount must have at most 2 decimal places"
             state.formCategory.isBlank() -> "Choose a category"
             date == null -> "Choose a date"
             else -> null
@@ -146,7 +149,7 @@ class TransactionViewModel @Inject constructor(
                 transactionRepo.updateTransaction(
                     id = state.selectedTransaction.id,
                     dto = TransactionUpdateDTO(
-                        amount = amount,
+                        amount = amount.toMoney(),
                         category = state.formCategory,
                         type = state.formType,
                         transactionDate = date,
@@ -156,7 +159,7 @@ class TransactionViewModel @Inject constructor(
             } else {
                 transactionRepo.createTransaction(
                     dto = TransactionCreateDTO(
-                        amount = amount,
+                        amount = amount.toMoney(),
                         category = state.formCategory,
                         type = state.formType,
                         transactionDate = date,
@@ -182,7 +185,7 @@ class TransactionViewModel @Inject constructor(
         _state.update {
             it.copy(
                 selectedTransaction = txn,
-                formAmount = txn.amount.toString(),
+                formAmount = txn.amount.toPlainString(),
                 formCategory = txn.category,
                 formType = txn.type,
                 formDate = txn.transactionDate.toString(),

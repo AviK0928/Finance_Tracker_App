@@ -28,6 +28,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import retrofit2.Response
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -93,10 +94,11 @@ class SyncRepoImplTest {
 
         assertEquals(listOf<String?>("c1"), api.cursorsSent)
         val local = database.transactionDao().getAll().associate { it.id to it.amount }
-        assertEquals(mapOf(1L to 15.0, 3L to 30.0), local)
+        // Room keeps the exact value and scale (stored as decimal text)
+        assertEquals(mapOf(1L to BigDecimal("15.0"), 3L to BigDecimal("30.0")), local)
         val budgets = database.budgetDao().getAll()
         assertEquals(listOf(8L), budgets.map { it.id })
-        assertEquals(45.0, budgets.single().spentAmount, 0.0)
+        assertEquals(BigDecimal("45.0"), budgets.single().spentAmount)
         assertEquals("c2", database.syncStateDao().getCursor())
     }
 
@@ -138,7 +140,7 @@ class SyncRepoImplTest {
     }
 
     private fun transaction(id: Long, amount: Double) = TransactionResponseDTO(
-        id = id, userId = 1, amount = amount, category = "Food", type = TransactionType.EXPENSE,
+        id = id, userId = 1, amount = BigDecimal.valueOf(amount), category = "Food", type = TransactionType.EXPENSE,
         transactionDate = LocalDateTime.of(2026, 10, 5, 10, 0).plusMinutes(id),
         description = null,
         createdAt = LocalDateTime.of(2026, 10, 5, 10, 0),
@@ -146,8 +148,8 @@ class SyncRepoImplTest {
     )
 
     private fun budget(id: Long, spent: Double) = BudgetResponseDTO(
-        id = id, userId = 1, name = "Budget $id", category = null, amount = 100.0,
-        spentAmount = spent, remainingAmount = 100.0 - spent, percentageSpent = spent,
+        id = id, userId = 1, name = "Budget $id", category = null, amount = BigDecimal("100.0"),
+        spentAmount = BigDecimal.valueOf(spent), remainingAmount = BigDecimal.valueOf(100.0 - spent), percentageSpent = spent,
         startDate = LocalDate.of(2026, 10, 1), endDate = LocalDate.of(2026, 10, 31), notes = null,
         budgetFrequency = BudgetFrequency.MONTHLY, budgetStatus = BudgetStatus.ACTIVE,
         createdAt = LocalDateTime.of(2026, 10, 5, 10, 0),

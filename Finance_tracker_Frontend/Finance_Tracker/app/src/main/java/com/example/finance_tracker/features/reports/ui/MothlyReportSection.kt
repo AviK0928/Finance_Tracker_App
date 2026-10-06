@@ -21,7 +21,7 @@ fun MonthlyReportSection(state: ReportState) {
 }
 
 @Composable
-private fun ReportStatCard(label: String, value: Double) {
+private fun ReportStatCard(label: String, value: java.math.BigDecimal) {
     Card(
         modifier = Modifier
             .fillMaxWidth()

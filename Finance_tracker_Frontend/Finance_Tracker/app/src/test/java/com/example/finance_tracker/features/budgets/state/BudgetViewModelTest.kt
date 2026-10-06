@@ -25,6 +25,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.math.BigDecimal
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BudgetViewModelTest {
@@ -58,7 +59,7 @@ class BudgetViewModelTest {
         override suspend fun getAllTransactionsForUser() = unused()
         override suspend fun getFilteredTransactions(
             category: String?, type: TransactionType?, startDate: String?, endDate: String?,
-            minAmount: Double?, maxAmount: Double?
+            minAmount: BigDecimal?, maxAmount: BigDecimal?
         ) = unused()
         override suspend fun updateTransaction(id: Long, dto: TransactionUpdateDTO) = unused()
         override suspend fun deleteTransaction(id: Long) = unused()
@@ -96,6 +97,38 @@ class BudgetViewModelTest {
         assertNull(viewModel.state.value.errorMessage)
         assertTrue(viewModel.state.value.isFormVisible)
         assertTrue(repo.created.isEmpty())
+    }
+
+    private fun fillIn(viewModel: BudgetViewModel, amount: String) {
+        viewModel.onEvent(BudgetEvent.ShowForm)
+        viewModel.onEvent(BudgetEvent.OnTitleChanged("Food"))
+        viewModel.onEvent(BudgetEvent.OnAmountChanged(amount))
+        viewModel.onEvent(BudgetEvent.OnStartDateChanged("2026-10-01"))
+        viewModel.onEvent(BudgetEvent.OnEndDateChanged("2026-10-31"))
+    }
+
+    @Test
+    fun moreThanTwoDecimals_isNamed_insideTheForm_andNothingIsSent() {
+        val repo = FakeBudgetRepo()
+        val viewModel = BudgetViewModel(repo, FakeTransactionRepo())
+
+        fillIn(viewModel, amount = "500.125")
+        viewModel.onEvent(BudgetEvent.SubmitForm)
+
+        assertEquals("Amount must have at most 2 decimal places", viewModel.state.value.formError)
+        assertTrue(repo.created.isEmpty())
+    }
+
+    @Test
+    fun amount_isSentExactly_atTwoDecimals() {
+        val repo = FakeBudgetRepo()
+        val viewModel = BudgetViewModel(repo, FakeTransactionRepo())
+
+        // Trailing zeros past 2 decimals are fine; a Double would send 12345678901234568
+        fillIn(viewModel, amount = "12345678901234567.100")
+        viewModel.onEvent(BudgetEvent.SubmitForm)
+
+        assertEquals(BigDecimal("12345678901234567.10"), repo.created.single().amount)
     }
 
     @Test

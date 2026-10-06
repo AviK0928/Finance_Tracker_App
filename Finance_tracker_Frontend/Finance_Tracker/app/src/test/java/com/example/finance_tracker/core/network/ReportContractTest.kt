@@ -7,6 +7,7 @@ import com.google.gson.reflect.TypeToken
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.math.BigDecimal
 import java.time.LocalDateTime
 
 /** Shapes of the backend report and dashboard DTOs (field names as Jackson writes them). */
@@ -22,10 +23,10 @@ class ReportContractTest {
         val dto = gson.fromJson(json, MonthlyReportDTO::class.java)
 
         assertEquals("OCTOBER", dto.month)
-        assertEquals(20000.0, dto.totalIncome, 0.0)
-        assertEquals(350.5, dto.totalExpense, 0.0)
-        assertEquals(19649.5, dto.netSavings, 0.0)
-        assertEquals(350.5, dto.categoryBreakdown.getValue("Food"), 0.0)
+        assertEquals(BigDecimal("20000.00"), dto.totalIncome)
+        assertEquals(BigDecimal("350.50"), dto.totalExpense)
+        assertEquals(BigDecimal("19649.50"), dto.netSavings)
+        assertEquals(BigDecimal("350.50"), dto.categoryBreakdown.getValue("Food"))
     }
 
     @Test
@@ -36,8 +37,8 @@ class ReportContractTest {
         val list: List<TrendReportDTO> = gson.fromJson(json, type)
 
         assertEquals(LocalDateTime.of(2026, 10, 5, 0, 0), list[0].date)
-        assertEquals(1000.0, list[0].income, 0.0)
-        assertEquals(350.5, list[0].expense, 0.0)
+        assertEquals(BigDecimal("1000.00"), list[0].income)
+        assertEquals(BigDecimal("350.50"), list[0].expense)
     }
 
     @Test

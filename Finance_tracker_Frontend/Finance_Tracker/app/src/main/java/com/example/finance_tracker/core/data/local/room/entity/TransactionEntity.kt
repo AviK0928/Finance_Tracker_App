@@ -3,6 +3,7 @@ package com.example.finance_tracker.core.data.local.room.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.example.finance_tracker.core.network.model.transaction.TransactionType
+import java.math.BigDecimal
 import java.time.LocalDateTime
 
 /** Local copy of a server transaction (same fields as TransactionResponseDTO), keyed by the server id. */
@@ -10,7 +11,7 @@ import java.time.LocalDateTime
 data class TransactionEntity(
     @PrimaryKey val id: Long,
     val userId: Long,
-    val amount: Double,
+    val amount: BigDecimal,
     val category: String,
     val type: TransactionType,
     val transactionDate: LocalDateTime,

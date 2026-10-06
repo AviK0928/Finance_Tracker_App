@@ -1,11 +1,12 @@
 package com.example.finance_tracker.core.network.model.transaction
 
+import java.math.BigDecimal
 import java.time.LocalDateTime
 
 data class TransactionResponseDTO(
     val id: Long,
     val userId: Long,
-    val amount: Double,
+    val amount: BigDecimal,
     val category: String,
     val type: TransactionType,
     val transactionDate: LocalDateTime,

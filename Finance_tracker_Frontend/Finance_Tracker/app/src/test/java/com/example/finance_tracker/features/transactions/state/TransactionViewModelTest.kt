@@ -20,6 +20,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -52,7 +53,7 @@ class TransactionViewModelTest {
         override suspend fun getAllTransactionsForUser() = unused()
         override suspend fun getFilteredTransactions(
             category: String?, type: TransactionType?, startDate: String?, endDate: String?,
-            minAmount: Double?, maxAmount: Double?
+            minAmount: BigDecimal?, maxAmount: BigDecimal?
         ) = unused()
         override suspend fun updateTransaction(id: Long, dto: TransactionUpdateDTO) = unused()
         override suspend fun deleteTransaction(id: Long) = unused()
@@ -105,6 +106,32 @@ class TransactionViewModelTest {
         assertNull(viewModel.state.value.errorMessage)
         assertTrue(viewModel.state.value.isFormVisible)
         assertTrue(repo.created.isEmpty())
+    }
+
+    @Test
+    fun moreThanTwoDecimals_isNamed_insideTheForm_andNothingIsSent() {
+        val repo = FakeTransactionRepo()
+        val viewModel = TransactionViewModel(repo)
+
+        fillIn(viewModel)
+        viewModel.onEvent(TransactionEvent.OnAmountChanged("10.555"))
+        viewModel.onEvent(TransactionEvent.SubmitForm)
+
+        assertEquals("Amount must have at most 2 decimal places", viewModel.state.value.formError)
+        assertTrue(repo.created.isEmpty())
+    }
+
+    @Test
+    fun amount_isSentExactly_atTwoDecimals() {
+        val repo = FakeTransactionRepo()
+        val viewModel = TransactionViewModel(repo)
+
+        fillIn(viewModel)
+        // 17 integer digits (the backend maximum): a Double would send 12345678901234568
+        viewModel.onEvent(TransactionEvent.OnAmountChanged(" 12345678901234567.8 "))
+        viewModel.onEvent(TransactionEvent.SubmitForm)
+
+        assertEquals(BigDecimal("12345678901234567.80"), repo.created.single().amount)
     }
 
     @Test

@@ -4,6 +4,7 @@ import com.example.finance_tracker.core.network.model.sync.SyncResponseDTO
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
+import java.math.BigDecimal
 
 class SyncContractTest {
 
@@ -26,8 +27,8 @@ class SyncContractTest {
         assertEquals("2026-10-05T15:16:30.655138087", dto.cursor)
         assertFalse(dto.fullSync)
         assertEquals(621L, dto.transactions.single().id)
-        assertEquals(120.0, dto.transactions.single().amount, 0.0)
+        assertEquals(BigDecimal("120.00"), dto.transactions.single().amount)
         assertEquals(listOf(620L), dto.deletedTransactionIds)
-        assertEquals(120.0, dto.budgets.single().spentAmount, 0.0)
+        assertEquals(BigDecimal("120.00"), dto.budgets.single().spentAmount)
     }
 }

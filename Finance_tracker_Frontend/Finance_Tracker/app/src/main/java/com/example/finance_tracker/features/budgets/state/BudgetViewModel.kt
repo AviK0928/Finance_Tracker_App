@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.finance_tracker.core.data.model.DefaultCategories
 import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.core.network.model.budget.*
+import com.example.finance_tracker.core.util.hasMoreThanTwoDecimals
+import com.example.finance_tracker.core.util.toMoney
 import com.example.finance_tracker.features.budgets.domain.BudgetRepo
 import com.example.finance_tracker.features.transactions.domain.TransactionRepo
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -128,13 +130,14 @@ class BudgetViewModel @Inject constructor(
 
     private fun submitForm() {
         val current = _state.value
-        val amount = current.formAmount.toDoubleOrNull()
+        val amount = current.formAmount.trim().toBigDecimalOrNull()
         val startDate = current.formStartDate.toLocalDateOrNull()
         val endDate = current.formEndDate.toLocalDateOrNull()
         // Say what is wrong; a plain "Invalid input" left the user guessing
         val problem = when {
             current.formTitle.isBlank() -> "Enter a title"
-            amount == null || amount <= 0.0 -> "Enter an amount greater than 0"
+            amount == null || amount.signum() <= 0 -> "Enter an amount greater than 0"
+            amount != null && amount.hasMoreThanTwoDecimals() -> "Amount must have at most 2 decimal places"
             startDate == null || endDate == null -> "Choose start and end dates"
             startDate != null && endDate != null && endDate.isBefore(startDate) -> "End date must be on or after start date"
             else -> null
@@ -154,7 +157,7 @@ class BudgetViewModel @Inject constructor(
                     id = current.selectedBudget.id,
                     dto = BudgetUpdateDTO(
                         name = current.formTitle,
-                        amount = amount,
+                        amount = amount.toMoney(),
                         category = category,
                         startDate = startDate,
                         endDate = endDate,
@@ -166,7 +169,7 @@ class BudgetViewModel @Inject constructor(
                 budgetRepo.createBudget(
                     dto = BudgetCreateDTO(
                         name = current.formTitle,
-                        amount = amount,
+                        amount = amount.toMoney(),
                         category = category,
                         startDate = startDate,
                         endDate = endDate,
@@ -194,7 +197,7 @@ class BudgetViewModel @Inject constructor(
             it.copy(
                 selectedBudget = budget,
                 formTitle = budget.name,
-                formAmount = budget.amount.toString(),
+                formAmount = budget.amount.toPlainString(),
                 formCategory = budget.category ?: "",
                 formStartDate = budget.startDate.toString(),
                 formEndDate = budget.endDate.toString(),
