@@ -25,6 +25,15 @@ yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
 
 echo "sdk.dir=$SDK" > Finance_tracker_Frontend/Finance_Tracker/local.properties
 
+echo "==> google-services.json"
+# The google-services Gradle plugin needs this file; it comes from a Codespaces secret and is gitignored
+if [ -n "${GOOGLE_SERVICES_JSON:-}" ]; then
+  printf '%s\n' "$GOOGLE_SERVICES_JSON" > Finance_tracker_Frontend/Finance_Tracker/app/google-services.json
+  echo "Wrote app/google-services.json from the GOOGLE_SERVICES_JSON secret"
+else
+  echo "GOOGLE_SERVICES_JSON is not set: the Android build fails until app/google-services.json exists"
+fi
+
 echo "==> .env"
 if [ ! -f .env ]; then
   cp .env.example .env

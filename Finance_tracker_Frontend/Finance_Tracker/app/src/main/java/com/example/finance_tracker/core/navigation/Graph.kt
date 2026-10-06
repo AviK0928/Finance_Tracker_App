@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
+import com.example.finance_tracker.core.push.RequestNotificationPermission
 import com.example.finance_tracker.core.session.SessionViewModel
 
 private val AUTH_ROUTES = setOf(Route.AUTH, Route.FORGOT_PASSWORD, Route.RESET_PASSWORD)
@@ -32,6 +33,11 @@ fun AppNavGraph(
     ) {
         authGraph(navActions)
         mainGraph(navActions)
+    }
+
+    // Ask for the notification permission only once someone is logged in (pushes are per account)
+    if (loggedIn) {
+        RequestNotificationPermission()
     }
 
     // Token gone (logout, account deleted, 401 from AuthInterceptor): back to login, history cleared

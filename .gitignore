@@ -60,6 +60,10 @@ build/
 .env
 .env.*
 
+# === Firebase ===
+# Android Firebase config; written from the GOOGLE_SERVICES_JSON Codespaces secret by post-create.sh
+google-services.json
+
 # === Node (if any tools use Node/npm) ===
 node_modules/
 npm-debug.log

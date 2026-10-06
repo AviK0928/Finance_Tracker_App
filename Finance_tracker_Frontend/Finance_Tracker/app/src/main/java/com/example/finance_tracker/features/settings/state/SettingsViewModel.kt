@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.core.network.model.settings.ImportSummaryDTO
 import com.example.finance_tracker.core.network.model.settings.UpdateSettingDTO
+import com.example.finance_tracker.core.push.PushRegistrar
 import com.example.finance_tracker.core.sync.SyncRepo
 import com.example.finance_tracker.features.settings.domain.SettingsRepo
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,7 +19,8 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsRepo: SettingsRepo,
-    private val syncRepo: SyncRepo
+    private val syncRepo: SyncRepo,
+    private val pushRegistrar: PushRegistrar
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SettingsState())
@@ -78,6 +80,8 @@ class SettingsViewModel @Inject constructor(
     private fun logout() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
+            // Needs the JWT, so it runs before the repository clears it; best effort, at most a few seconds
+            pushRegistrar.unregister()
             // The repository clears the local session whatever the server answers; AppNavGraph sees
             // the token disappear and shows the login screen.
             settingsRepo.logout()

@@ -24,6 +24,9 @@ dagger = "2.51.1"
 ksp = "2.0.0-1.0.24"
 robolectric = "4.14.1"
 androidxTestCore = "1.6.1"
+# Firebase Cloud Messaging (push). The BoM pins every Firebase library version.
+firebaseBom = "33.15.0"
+googleServices = "4.4.3"
 
 [libraries]
 # Core
@@ -81,9 +84,14 @@ androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-co
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 androidx-test-core = { group = "androidx.test", name = "core", version.ref = "androidxTestCore" }
 
+# Firebase
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "dagger" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }

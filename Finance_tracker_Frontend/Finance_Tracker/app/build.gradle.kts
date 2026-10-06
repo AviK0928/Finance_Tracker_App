@@ -6,6 +6,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
+    // Reads app/google-services.json (gitignored; written from the GOOGLE_SERVICES_JSON Codespaces secret)
+    alias(libs.plugins.google.services)
 }
 
 // Debug builds read the backend URL from local.properties (gitignored, so a Codespace address is
@@ -112,6 +114,10 @@ dependencies {
 
     // Coroutines
     implementation(libs.kotlinx.coroutines)
+
+    // Push notifications (Firebase Cloud Messaging)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
 
     // Testing
     testImplementation(libs.junit)

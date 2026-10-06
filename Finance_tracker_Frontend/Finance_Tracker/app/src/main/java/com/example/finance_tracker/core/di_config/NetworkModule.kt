@@ -6,6 +6,7 @@ import com.example.finance_tracker.core.network.GsonProvider
 import com.example.finance_tracker.core.network.apiendpoints.AuthApi
 import com.example.finance_tracker.core.network.apiendpoints.BudgetApi
 import com.example.finance_tracker.core.network.apiendpoints.DashboardApi
+import com.example.finance_tracker.core.network.apiendpoints.DeviceApi
 import com.example.finance_tracker.core.network.apiendpoints.NotificationApi
 import com.example.finance_tracker.core.network.apiendpoints.ReportApi
 import com.example.finance_tracker.core.network.apiendpoints.SettingsApi
@@ -61,6 +62,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideDashboardApi(retrofit: Retrofit): DashboardApi = retrofit.create(DashboardApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideDeviceApi(retrofit: Retrofit): DeviceApi = retrofit.create(DeviceApi::class.java)
 
     @Provides
     @Singleton

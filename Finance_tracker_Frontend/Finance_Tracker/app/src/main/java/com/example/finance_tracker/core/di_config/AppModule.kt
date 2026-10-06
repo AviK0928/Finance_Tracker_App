@@ -13,6 +13,8 @@ import com.example.finance_tracker.core.network.apiendpoints.ReportApi
 import com.example.finance_tracker.core.network.apiendpoints.SettingsApi
 import com.example.finance_tracker.core.network.apiendpoints.SyncApi
 import com.example.finance_tracker.core.network.apiendpoints.TransactionApi
+import com.example.finance_tracker.core.push.FirebasePushTokenSource
+import com.example.finance_tracker.core.push.PushTokenSource
 import com.example.finance_tracker.features.auth.data.AuthRepoImpl
 import com.example.finance_tracker.features.auth.domain.AuthRepo
 import com.example.finance_tracker.features.budgets.data.BudgetRepoImpl
@@ -110,5 +112,9 @@ object AppModule {
 
     @Provides
     fun provideSyncTrigger(coordinator: SessionSyncCoordinator): SyncTrigger = coordinator
+
+    @Provides
+    @Singleton
+    fun providePushTokenSource(): PushTokenSource = FirebasePushTokenSource()
 
 }
