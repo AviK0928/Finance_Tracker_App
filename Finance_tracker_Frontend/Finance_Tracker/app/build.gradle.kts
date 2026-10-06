@@ -27,7 +27,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.finance_tracker"
+        applicationId = "io.github.avik0928.quantro"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
