@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.finance_tracker.core.ui.components.*
@@ -29,7 +30,8 @@ fun ForgotPasswordScreen(
         TextFieldWithLabels(
             label = "Email",
             value = state.email,
-            onValueChange = { viewModel.onEvent(AuthEvent.OnEmailChanged(it)) }
+            onValueChange = { viewModel.onEvent(AuthEvent.OnEmailChanged(it)) },
+            keyboardType = KeyboardType.Email
         )
 
         if (state.forgotResetMessage != null) {
