@@ -12,7 +12,7 @@ public class ResetPasswordRequest {
 
     // Same policy as registration; otherwise a reset could set a weaker password than sign-up allows
     @NotBlank
-    @Size(min = PasswordRules.MIN_LENGTH, message = PasswordRules.LENGTH_MESSAGE)
+    @Size(min = PasswordRules.MIN_LENGTH, max = PasswordRules.MAX_LENGTH, message = PasswordRules.LENGTH_MESSAGE)
     @Pattern(regexp = PasswordRules.PATTERN, message = PasswordRules.PATTERN_MESSAGE)
     private String newPassword;
 }

@@ -9,6 +9,7 @@ import com.example.finance_tracker.core.util.hasMoreThanTwoDecimals
 import com.example.finance_tracker.core.util.toMoney
 import com.example.finance_tracker.features.budgets.domain.BudgetRepo
 import com.example.finance_tracker.features.transactions.domain.TransactionRepo
+import com.example.finance_tracker.core.sync.SyncTrigger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +23,8 @@ import javax.inject.Inject
 @HiltViewModel
 class BudgetViewModel @Inject constructor(
     private val budgetRepo: BudgetRepo,
-    private val transactionRepo: TransactionRepo
+    private val transactionRepo: TransactionRepo,
+    private val syncTrigger: SyncTrigger
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(BudgetState())
@@ -86,7 +88,11 @@ class BudgetViewModel @Inject constructor(
      * Pull to refresh: reloads while the current list stays on screen.
      * The screen waits for the returned job, so the indicator stops exactly when the load ends.
      */
-    fun refresh(): Job = loadBudgets(showLoading = false)
+    fun refresh(): Job {
+        // A pull also refreshes the offline copy (fire and forget; ignored while logged out)
+        syncTrigger.requestSync()
+        return loadBudgets(showLoading = false)
+    }
 
     private fun loadBudgets(showLoading: Boolean = true): Job {
         loadCategories()

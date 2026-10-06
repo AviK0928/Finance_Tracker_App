@@ -5,10 +5,12 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import retrofit2.Response
 import java.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
 
 class ApiResponseHandlerTest {
 
@@ -51,6 +53,15 @@ class ApiResponseHandlerTest {
             val result = ApiResponseHandler.handleApi<String> { Response.error(400, body) }
 
             assertEquals(NetworkResult.Error(message = "amount: Amount Must be Greater than 0", code = 400), result)
+        }
+    }
+
+    @Test
+    fun cancellation_isRethrown_notTurnedIntoAnError() {
+        assertThrows(CancellationException::class.java) {
+            runBlocking {
+                ApiResponseHandler.handleApi<String> { throw CancellationException("screen closed") }
+            }
         }
     }
 

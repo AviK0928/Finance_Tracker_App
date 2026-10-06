@@ -16,6 +16,9 @@ public interface DeviceTokenRepository extends JpaRepository<DeviceToken, Long> 
 
     List<DeviceToken> findByUserId(Long userId);
 
+    /** The user's devices, most recently registered first. */
+    List<DeviceToken> findByUserIdOrderByUpdatedAtDesc(Long userId);
+
     /** Deletes the token only if it belongs to {@code userId}; returns the number of rows deleted (0 or 1). */
     @Transactional
     @Modifying

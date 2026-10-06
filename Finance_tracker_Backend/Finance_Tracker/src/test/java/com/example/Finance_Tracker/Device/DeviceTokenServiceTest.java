@@ -18,6 +18,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -72,6 +73,30 @@ class DeviceTokenServiceTest {
         assertThat(existing.getUserId()).isEqualTo(CURRENT_USER_ID);
         assertThat(existing.getUpdatedAt()).isAfter(registered);
         verify(deviceTokenRepository, never()).save(any());
+    }
+
+    @Test
+    void register_beyondTheCap_removesTheLeastRecentlyRegisteredDevices() {
+        when(deviceTokenRepository.findByToken("token-new")).thenReturn(Optional.empty());
+        LocalDateTime now = LocalDateTime.now();
+        List<DeviceToken> newestFirst = new ArrayList<>();
+        for (int i = 0; i <= DeviceTokenService.MAX_DEVICES_PER_USER; i++) {
+            newestFirst.add(new DeviceToken(CURRENT_USER_ID, "token-" + i, DevicePlatform.ANDROID, now.minusDays(i)));
+        }
+        when(deviceTokenRepository.findByUserIdOrderByUpdatedAtDesc(CURRENT_USER_ID)).thenReturn(newestFirst);
+
+        deviceTokenService.register(new DeviceRegistrationDTO("token-new", DevicePlatform.ANDROID));
+
+        verify(deviceTokenRepository).deleteAll(List.of(newestFirst.get(DeviceTokenService.MAX_DEVICES_PER_USER)));
+    }
+
+    @Test
+    void register_withinTheCap_removesNothing() {
+        when(deviceTokenRepository.findByToken("token-new")).thenReturn(Optional.empty());
+
+        deviceTokenService.register(new DeviceRegistrationDTO("token-new", DevicePlatform.ANDROID));
+
+        verify(deviceTokenRepository, never()).deleteAll(any());
     }
 
     @Test

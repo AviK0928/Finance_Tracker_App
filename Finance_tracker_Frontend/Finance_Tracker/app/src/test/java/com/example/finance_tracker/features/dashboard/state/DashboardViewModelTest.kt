@@ -6,6 +6,7 @@ import com.example.finance_tracker.core.network.model.dashboard.DashboardRespons
 import com.example.finance_tracker.core.network.model.dashboard.SummaryInfo
 import com.example.finance_tracker.core.network.model.dashboard.TransactionInfo
 import com.example.finance_tracker.features.dashboard.domain.DashboardRepo
+import com.example.finance_tracker.core.sync.RecordingSyncTrigger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -23,6 +24,8 @@ import java.math.BigDecimal
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DashboardViewModelTest {
+
+    private val syncTrigger = RecordingSyncTrigger()
 
     private class FakeDashboardRepo(
         var remote: NetworkResult<DashboardResponseDTO>,
@@ -57,7 +60,7 @@ class DashboardViewModelTest {
             remote = NetworkResult.Error("Network error: timeout", null, IOException("timeout")),
             local = dashboard(income = "500")
         )
-        val viewModel = DashboardViewModel(repo)
+        val viewModel = DashboardViewModel(repo, syncTrigger)
 
         viewModel.onEvent(DashboardEvent.LoadDashboardData)
 
@@ -70,7 +73,7 @@ class DashboardViewModelTest {
     @Test
     fun serverError_isShown_andTheLocalCopyIsNotUsed() {
         val repo = FakeDashboardRepo(remote = NetworkResult.Error("Server error", 500), local = dashboard(income = "500"))
-        val viewModel = DashboardViewModel(repo)
+        val viewModel = DashboardViewModel(repo, syncTrigger)
 
         viewModel.onEvent(DashboardEvent.LoadDashboardData)
 
@@ -82,7 +85,7 @@ class DashboardViewModelTest {
     @Test
     fun failedFirstLoad_isMarked_untilALoadSucceeds_andALaterFailureKeepsTheNumbers() {
         val repo = FakeDashboardRepo(remote = NetworkResult.Error("Server error", 500), local = null)
-        val viewModel = DashboardViewModel(repo)
+        val viewModel = DashboardViewModel(repo, syncTrigger)
 
         viewModel.onEvent(DashboardEvent.LoadDashboardData)
         assertTrue(viewModel.state.value.loadFailed)
@@ -106,7 +109,7 @@ class DashboardViewModelTest {
             remote = NetworkResult.Error("Network error: timeout", null, IOException("timeout")),
             local = null
         )
-        val viewModel = DashboardViewModel(repo)
+        val viewModel = DashboardViewModel(repo, syncTrigger)
 
         viewModel.onEvent(DashboardEvent.LoadDashboardData)
 
@@ -120,7 +123,7 @@ class DashboardViewModelTest {
             remote = NetworkResult.Error("Network error: timeout", null, IOException("timeout")),
             local = dashboard(income = "500")
         )
-        val viewModel = DashboardViewModel(repo)
+        val viewModel = DashboardViewModel(repo, syncTrigger)
         viewModel.onEvent(DashboardEvent.LoadDashboardData)
         assertTrue(viewModel.state.value.isOffline)
 
@@ -130,6 +133,7 @@ class DashboardViewModelTest {
         val job = viewModel.refresh()
 
         assertTrue(job.isCompleted)
+        assertEquals(1, syncTrigger.requests)
         assertEquals(false, loadingDuringRefresh)
         assertFalse(viewModel.state.value.isOffline)
         assertEquals(0, BigDecimal("700").compareTo(viewModel.state.value.totalIncome))

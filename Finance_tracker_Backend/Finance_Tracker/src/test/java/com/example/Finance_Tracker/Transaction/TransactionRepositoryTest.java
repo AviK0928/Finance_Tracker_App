@@ -2,6 +2,7 @@ package com.example.Finance_Tracker.Transaction;
 
 import com.example.Finance_Tracker.Transaction.entity.Transaction;
 import com.example.Finance_Tracker.Transaction.repository.TransactionRepository;
+import com.example.Finance_Tracker.Transaction.util.TransactionSpecification;
 import com.example.Finance_Tracker.Transaction.util.TransactionType;
 import com.example.Finance_Tracker.User.entity.User;
 import com.example.Finance_Tracker.User.repository.UserRepository;
@@ -17,7 +18,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Dashboard queries against the dev Postgres; each test is rolled back. */
+/** Dashboard queries and the transaction filter against the dev Postgres; each test is rolled back. */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class TransactionRepositoryTest {
@@ -57,6 +58,19 @@ class TransactionRepositoryTest {
                 .isEmpty();
     }
 
+    @Test
+    void filterBy_category_ignoresCase_likeBudgetsAndReports() {
+        Long userId = newUser();
+        save(userId, TransactionType.EXPENSE, "10.00", "Food");
+        save(userId, TransactionType.EXPENSE, "20.00", "food");
+        save(userId, TransactionType.EXPENSE, "30.00", "Rent");
+
+        var found = transactionRepository.findAll(
+                TransactionSpecification.filterBy(userId, "FOOD", null, null, null, null, null));
+
+        assertThat(found).extracting(Transaction::getCategory).containsExactlyInAnyOrder("Food", "food");
+    }
+
     private Long newUser() {
         return userRepository.save(User.builder()
                 .email("tx-repo-" + System.nanoTime() + "@example.com")
@@ -66,10 +80,14 @@ class TransactionRepositoryTest {
     }
 
     private void save(Long owner, TransactionType type, String amount) {
+        save(owner, type, amount, "Food");
+    }
+
+    private void save(Long owner, TransactionType type, String amount, String category) {
         Transaction transaction = new Transaction();
         transaction.setUserId(owner);
         transaction.setType(type);
-        transaction.setCategory("Food");
+        transaction.setCategory(category);
         transaction.setAmount(new BigDecimal(amount));
         transaction.setTransactionDate(LocalDateTime.of(2026, 10, 5, 12, 0));
         transactionRepository.save(transaction);

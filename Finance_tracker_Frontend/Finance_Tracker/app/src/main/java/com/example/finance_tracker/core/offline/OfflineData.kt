@@ -15,7 +15,7 @@ import java.math.BigDecimal
 object OfflineData {
 
     /**
-     * Mirrors backend TransactionSpecification: exact category, type, date and amount bounds inclusive.
+     * Mirrors backend TransactionSpecification: category ignoring case, type, date and amount bounds inclusive.
      * Newest first, like the paginated list (transactionDate desc).
      */
     fun filterTransactions(
@@ -23,7 +23,7 @@ object OfflineData {
         filter: TransactionFilterDTO
     ): List<TransactionResponseDTO> = all
         .filter { t ->
-            (filter.category.isNullOrEmpty() || t.category == filter.category) &&
+            (filter.category.isNullOrEmpty() || t.category.equals(filter.category, ignoreCase = true)) &&
                 (filter.type == null || t.type == filter.type) &&
                 (filter.startDate == null || !t.transactionDate.isBefore(filter.startDate)) &&
                 (filter.endDate == null || !t.transactionDate.isAfter(filter.endDate)) &&

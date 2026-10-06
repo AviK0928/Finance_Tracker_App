@@ -38,7 +38,6 @@ public class UserSettingService {
             SettingKey.AUTO_SYNC_ENABLED, "true",
             SettingKey.SYNC_FREQUENCY_MINUTES, "60",
             SettingKey.NOTIFICATIONS_ENABLED, "true",
-            SettingKey.NOTIFY_SYNC_EVENTS, "true",
             SettingKey.NOTIFY_BUDGET_EXPIRY, "true",
             SettingKey.NOTIFY_SPENDING_ALERTS, "true",
             SettingKey.DEFAULT_BUDGET_DURATION, "MONTHLY",

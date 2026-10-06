@@ -45,6 +45,21 @@ class BudgetCreateDTOValidationTest {
     }
 
     @Test
+    void amountWithThreeDecimals_isRejected_likeTransactions() {
+        BudgetCreateDTO dto = BudgetCreateDTO.builder()
+                .name("October")
+                .amount(new BigDecimal("1000.125"))
+                .startDate(LocalDate.of(2026, 10, 1))
+                .endDate(LocalDate.of(2026, 10, 31))
+                .frequency(BudgetFrequency.MONTHLY)
+                .build();
+
+        assertThat(validator.validate(dto))
+                .extracting(ConstraintViolation::getMessage)
+                .containsExactly("Amount must have at most 2 decimal places");
+    }
+
+    @Test
     void singleDayBudget_isValid() {
         assertThat(invalidFields(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 1)))
                 .isEmpty();

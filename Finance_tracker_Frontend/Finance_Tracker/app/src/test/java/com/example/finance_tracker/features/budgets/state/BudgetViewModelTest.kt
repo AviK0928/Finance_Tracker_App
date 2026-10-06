@@ -13,6 +13,7 @@ import com.example.finance_tracker.core.network.model.transaction.TransactionTyp
 import com.example.finance_tracker.core.network.model.transaction.TransactionUpdateDTO
 import com.example.finance_tracker.features.budgets.domain.BudgetRepo
 import com.example.finance_tracker.features.transactions.domain.TransactionRepo
+import com.example.finance_tracker.core.sync.RecordingSyncTrigger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -29,6 +30,8 @@ import java.math.BigDecimal
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BudgetViewModelTest {
+
+    private val syncTrigger = RecordingSyncTrigger()
 
     private class FakeBudgetRepo : BudgetRepo {
         val created = mutableListOf<BudgetCreateDTO>()
@@ -84,7 +87,7 @@ class BudgetViewModelTest {
     @Test
     fun endBeforeStart_isNamed_insideTheForm_andNothingIsSent() {
         val repo = FakeBudgetRepo()
-        val viewModel = BudgetViewModel(repo, FakeTransactionRepo())
+        val viewModel = BudgetViewModel(repo, FakeTransactionRepo(), syncTrigger)
 
         viewModel.onEvent(BudgetEvent.ShowForm)
         viewModel.onEvent(BudgetEvent.OnTitleChanged("Food"))
@@ -110,7 +113,7 @@ class BudgetViewModelTest {
     @Test
     fun moreThanTwoDecimals_isNamed_insideTheForm_andNothingIsSent() {
         val repo = FakeBudgetRepo()
-        val viewModel = BudgetViewModel(repo, FakeTransactionRepo())
+        val viewModel = BudgetViewModel(repo, FakeTransactionRepo(), syncTrigger)
 
         fillIn(viewModel, amount = "500.125")
         viewModel.onEvent(BudgetEvent.SubmitForm)
@@ -122,7 +125,7 @@ class BudgetViewModelTest {
     @Test
     fun amount_isSentExactly_atTwoDecimals() {
         val repo = FakeBudgetRepo()
-        val viewModel = BudgetViewModel(repo, FakeTransactionRepo())
+        val viewModel = BudgetViewModel(repo, FakeTransactionRepo(), syncTrigger)
 
         // Trailing zeros past 2 decimals are fine; a Double would send 12345678901234568
         fillIn(viewModel, amount = "12345678901234567.100")
@@ -133,7 +136,7 @@ class BudgetViewModelTest {
 
     @Test
     fun editingAField_clearsTheFormError() {
-        val viewModel = BudgetViewModel(FakeBudgetRepo(), FakeTransactionRepo())
+        val viewModel = BudgetViewModel(FakeBudgetRepo(), FakeTransactionRepo(), syncTrigger)
 
         fillIn(viewModel, amount = "500.125")
         viewModel.onEvent(BudgetEvent.SubmitForm)
@@ -146,7 +149,7 @@ class BudgetViewModelTest {
 
     @Test
     fun missingTitle_isNamed_insideTheForm() {
-        val viewModel = BudgetViewModel(FakeBudgetRepo(), FakeTransactionRepo())
+        val viewModel = BudgetViewModel(FakeBudgetRepo(), FakeTransactionRepo(), syncTrigger)
 
         viewModel.onEvent(BudgetEvent.ShowForm)
         viewModel.onEvent(BudgetEvent.OnAmountChanged("500"))
@@ -159,13 +162,14 @@ class BudgetViewModelTest {
     @Test
     fun refresh_reloadsTheBudgets_withoutTheFullScreenSpinner() {
         val repo = FakeBudgetRepo()
-        val viewModel = BudgetViewModel(repo, FakeTransactionRepo())
+        val viewModel = BudgetViewModel(repo, FakeTransactionRepo(), syncTrigger)
         var loadingDuringRefresh: Boolean? = null
         repo.onListCall = { loadingDuringRefresh = viewModel.state.value.isLoading }
 
         val job = viewModel.refresh()
 
         assertTrue(job.isCompleted)
+        assertEquals(1, syncTrigger.requests)
         assertEquals(1, repo.listCalls)
         assertEquals(false, loadingDuringRefresh)
         assertFalse(viewModel.state.value.isLoading)

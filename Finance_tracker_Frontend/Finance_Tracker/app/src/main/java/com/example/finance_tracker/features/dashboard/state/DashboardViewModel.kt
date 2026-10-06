@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.features.dashboard.domain.DashboardRepo
 import com.example.finance_tracker.core.network.model.dashboard.DashboardResponseDTO
+import com.example.finance_tracker.core.sync.SyncTrigger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +16,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
-    private val dashboardRepo: DashboardRepo
+    private val dashboardRepo: DashboardRepo,
+    private val syncTrigger: SyncTrigger
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DashboardState())
@@ -33,7 +35,11 @@ class DashboardViewModel @Inject constructor(
      * Pull to refresh: reloads while the current numbers stay on screen (no full-screen spinner).
      * The screen waits for the returned job, so the indicator stops exactly when the load ends.
      */
-    fun refresh(): Job = loadDashboardData(showLoading = false)
+    fun refresh(): Job {
+        // A pull also refreshes the offline copy (fire and forget; ignored while logged out)
+        syncTrigger.requestSync()
+        return loadDashboardData(showLoading = false)
+    }
 
     private fun loadDashboardData(showLoading: Boolean = true): Job {
         return viewModelScope.launch {

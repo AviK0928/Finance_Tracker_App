@@ -8,6 +8,7 @@ import com.example.finance_tracker.core.network.model.transaction.*
 import com.example.finance_tracker.core.util.hasMoreThanTwoDecimals
 import com.example.finance_tracker.core.util.toMoney
 import com.example.finance_tracker.features.transactions.domain.TransactionRepo
+import com.example.finance_tracker.core.sync.SyncTrigger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +21,8 @@ import java.time.format.DateTimeFormatter
 
 @HiltViewModel
 class TransactionViewModel @Inject constructor(
-    private val transactionRepo: TransactionRepo
+    private val transactionRepo: TransactionRepo,
+    private val syncTrigger: SyncTrigger
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TransactionState())
@@ -62,7 +64,11 @@ class TransactionViewModel @Inject constructor(
      * Pull to refresh: reloads the first page while the current list stays on screen.
      * The screen waits for the returned job, so the indicator stops exactly when the load ends.
      */
-    fun refresh(): Job = loadTransactions(0, showLoading = false)
+    fun refresh(): Job {
+        // A pull also refreshes the offline copy (fire and forget; ignored while logged out)
+        syncTrigger.requestSync()
+        return loadTransactions(0, showLoading = false)
+    }
 
     private fun loadTransactions(page: Int, showLoading: Boolean = true): Job {
         return viewModelScope.launch {

@@ -9,16 +9,24 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class DeviceTokenService {
+
+    /**
+     * Most devices one account keeps. Reinstalls and cleared app data each create a new token; FCM only
+     * reports an old one as gone when it is pushed to, so without a cap the rows would only ever grow.
+     */
+    public static final int MAX_DEVICES_PER_USER = 10;
 
     private final DeviceTokenRepository deviceTokenRepository;
 
     /**
      * Registers or refreshes the current user's device. A token already stored for another user is moved
      * to the current user (a different account signed in on that phone), so pushes follow the account.
+     * Beyond {@link #MAX_DEVICES_PER_USER}, the least recently registered devices are removed.
      */
     @Transactional
     public void register(DeviceRegistrationDTO dto) {
@@ -27,6 +35,12 @@ public class DeviceTokenService {
         deviceTokenRepository.findByToken(dto.getToken()).ifPresentOrElse(
                 existing -> existing.assignTo(userId, dto.getPlatform(), now),
                 () -> deviceTokenRepository.save(new DeviceToken(userId, dto.getToken(), dto.getPlatform(), now)));
+
+        // The query flushes the change above first, so the device just registered counts and comes first
+        List<DeviceToken> devices = deviceTokenRepository.findByUserIdOrderByUpdatedAtDesc(userId);
+        if (devices.size() > MAX_DEVICES_PER_USER) {
+            deviceTokenRepository.deleteAll(devices.subList(MAX_DEVICES_PER_USER, devices.size()));
+        }
     }
 
     /**

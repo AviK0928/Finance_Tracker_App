@@ -8,6 +8,7 @@ import com.example.finance_tracker.core.network.model.transaction.TransactionRes
 import com.example.finance_tracker.core.network.model.transaction.TransactionType
 import com.example.finance_tracker.core.network.model.transaction.TransactionUpdateDTO
 import com.example.finance_tracker.features.transactions.domain.TransactionRepo
+import com.example.finance_tracker.core.sync.RecordingSyncTrigger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -26,6 +27,8 @@ import java.time.LocalDateTime
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TransactionViewModelTest {
+
+    private val syncTrigger = RecordingSyncTrigger()
 
     /** Records creates; the list endpoints answer with an empty page. */
     private class FakeTransactionRepo(var createResult: NetworkResult<TransactionResponseDTO>? = null) : TransactionRepo {
@@ -82,7 +85,7 @@ class TransactionViewModelTest {
     @Test
     fun newExpense_withoutTouchingTheDate_isCreatedForToday() {
         val repo = FakeTransactionRepo()
-        val viewModel = TransactionViewModel(repo)
+        val viewModel = TransactionViewModel(repo, syncTrigger)
 
         fillIn(viewModel)
         viewModel.onEvent(TransactionEvent.SubmitForm)
@@ -96,7 +99,7 @@ class TransactionViewModelTest {
     @Test
     fun missingCategory_isNamed_insideTheForm_andNothingIsSent() {
         val repo = FakeTransactionRepo()
-        val viewModel = TransactionViewModel(repo)
+        val viewModel = TransactionViewModel(repo, syncTrigger)
 
         viewModel.onEvent(TransactionEvent.ShowForm)
         viewModel.onEvent(TransactionEvent.OnAmountChanged("100"))
@@ -111,7 +114,7 @@ class TransactionViewModelTest {
     @Test
     fun moreThanTwoDecimals_isNamed_insideTheForm_andNothingIsSent() {
         val repo = FakeTransactionRepo()
-        val viewModel = TransactionViewModel(repo)
+        val viewModel = TransactionViewModel(repo, syncTrigger)
 
         fillIn(viewModel)
         viewModel.onEvent(TransactionEvent.OnAmountChanged("10.555"))
@@ -124,7 +127,7 @@ class TransactionViewModelTest {
     @Test
     fun amount_isSentExactly_atTwoDecimals() {
         val repo = FakeTransactionRepo()
-        val viewModel = TransactionViewModel(repo)
+        val viewModel = TransactionViewModel(repo, syncTrigger)
 
         fillIn(viewModel)
         // 17 integer digits (the backend maximum): a Double would send 12345678901234568
@@ -136,7 +139,7 @@ class TransactionViewModelTest {
 
     @Test
     fun editingAField_clearsTheFormError() {
-        val viewModel = TransactionViewModel(FakeTransactionRepo())
+        val viewModel = TransactionViewModel(FakeTransactionRepo(), syncTrigger)
 
         viewModel.onEvent(TransactionEvent.ShowForm)
         viewModel.onEvent(TransactionEvent.OnAmountChanged("100"))
@@ -151,7 +154,7 @@ class TransactionViewModelTest {
     @Test
     fun serverError_staysInTheOpenForm() {
         val repo = FakeTransactionRepo(createResult = NetworkResult.Error("Amount must have at most 2 decimal places", 400))
-        val viewModel = TransactionViewModel(repo)
+        val viewModel = TransactionViewModel(repo, syncTrigger)
 
         fillIn(viewModel)
         viewModel.onEvent(TransactionEvent.SubmitForm)
@@ -165,13 +168,14 @@ class TransactionViewModelTest {
     @Test
     fun refresh_reloadsTheFirstPage_withoutTheFullScreenSpinner() {
         val repo = FakeTransactionRepo()
-        val viewModel = TransactionViewModel(repo)
+        val viewModel = TransactionViewModel(repo, syncTrigger)
         var loadingDuringRefresh: Boolean? = null
         repo.onListCall = { loadingDuringRefresh = viewModel.state.value.isLoading }
 
         val job = viewModel.refresh()
 
         assertTrue(job.isCompleted)
+        assertEquals(1, syncTrigger.requests)
         assertEquals(listOf(0), repo.requestedPages)
         assertEquals(false, loadingDuringRefresh)
         assertFalse(viewModel.state.value.isLoading)

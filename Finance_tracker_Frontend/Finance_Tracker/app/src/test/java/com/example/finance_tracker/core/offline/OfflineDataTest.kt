@@ -38,12 +38,16 @@ class OfflineDataTest {
     }
 
     @Test
-    fun filterTransactions_categoryIsExact_likeTheServer() {
-        val all = listOf(txn(1, TransactionType.EXPENSE, "Food", 10.0, day), txn(2, TransactionType.EXPENSE, "food", 10.0, day))
+    fun filterTransactions_categoryIgnoresCase_likeTheServer() {
+        val all = listOf(
+            txn(1, TransactionType.EXPENSE, "Food", 10.0, day),
+            txn(2, TransactionType.EXPENSE, "food", 10.0, day.minusHours(1)),
+            txn(3, TransactionType.EXPENSE, "Rent", 10.0, day)
+        )
 
-        val result = OfflineData.filterTransactions(all, TransactionFilterDTO(category = "Food"))
+        val result = OfflineData.filterTransactions(all, TransactionFilterDTO(category = "FOOD"))
 
-        assertEquals(listOf(1L), result.map { it.id })
+        assertEquals(listOf(1L, 2L), result.map { it.id })
     }
 
     @Test

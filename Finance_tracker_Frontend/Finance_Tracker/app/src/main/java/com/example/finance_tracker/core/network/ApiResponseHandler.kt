@@ -2,6 +2,7 @@ package com.example.finance_tracker.core.network
 
 import retrofit2.Response
 import java.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
 
 object ApiResponseHandler {
 
@@ -36,6 +37,9 @@ object ApiResponseHandler {
             }
         } catch (e: IOException) {
             NetworkResult.Error("Network error: ${e.localizedMessage}", null, e)
+        } catch (e: CancellationException) {
+            // A cancelled call (screen closed, withTimeout) must stop the caller, not become an error result
+            throw e
         } catch (e: Exception) {
             NetworkResult.Error("Unexpected error: ${e.localizedMessage}", null, e)
         }

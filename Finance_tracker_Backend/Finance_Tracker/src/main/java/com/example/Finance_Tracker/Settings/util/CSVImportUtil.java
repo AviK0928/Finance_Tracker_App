@@ -19,8 +19,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class CSVImportUtil {
+
+    /** Setting keys that no longer exist (removed by a Flyway migration). */
+    private static final Set<String> RETIRED_SETTING_KEYS = Set.of("NOTIFY_SYNC_EVENTS");
+
 
     public static List<Budget> parseBudgetsCSV(InputStream inputStream) {
         List<Budget> budgets = new ArrayList<>();
@@ -89,6 +94,10 @@ public class CSVImportUtil {
                 .parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
 
             for (CSVRecord record : parser) {
+                // Exports made before V6 still contain retired keys; skip them instead of failing the import
+                if (RETIRED_SETTING_KEYS.contains(record.get("key"))) {
+                    continue;
+                }
                 UserSetting setting = UserSetting.builder()
                         .userId(Long.parseLong(record.get("userId")))
                         .key(SettingKey.valueOf(record.get("key")))

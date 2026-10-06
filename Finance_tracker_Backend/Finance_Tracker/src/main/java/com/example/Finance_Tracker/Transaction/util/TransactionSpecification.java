@@ -2,7 +2,9 @@ package com.example.Finance_Tracker.Transaction.util;
 
 import com.example.Finance_Tracker.Transaction.dto.TransactionFilterDTO;
 import com.example.Finance_Tracker.Transaction.entity.Transaction;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
@@ -11,6 +13,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TransactionSpecification {
+
+    /**
+     * Case-insensitive, like budgets and reports (LOWER on both sides, so "food" finds "Food").
+     * Both sides go through SQL LOWER, so the database decides the case rules, not the JVM locale.
+     */
+    private static Predicate categoryMatches(Root<Transaction> root, CriteriaBuilder cb, String category) {
+        return cb.equal(cb.lower(root.get("category")), cb.lower(cb.literal(category)));
+    }
+
     public static Specification<Transaction> filterBy(
             Long userId,
             String category,
@@ -23,7 +34,7 @@ public class TransactionSpecification {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(criteriaBuilder.equal(root.get("userId"), userId));
             if (category != null && !category.isEmpty()) {
-                predicates.add(criteriaBuilder.equal(root.get("category"), category));
+                predicates.add(categoryMatches(root, criteriaBuilder, category));
             }
             if (type != null) {
                 predicates.add(criteriaBuilder.equal(root.get("type"), type));
@@ -63,7 +74,7 @@ public class TransactionSpecification {
             }
 
             if (category != null && !category.isEmpty()) {
-                predicates.add(criteriaBuilder.equal(root.get("category"), category));
+                predicates.add(categoryMatches(root, criteriaBuilder, category));
             }
 
             if (type != null) {
