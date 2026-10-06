@@ -11,8 +11,8 @@ The engineering log, with the bugs, root causes and decisions behind each change
 | Login | Dashboard | Transactions |
 |:---:|:---:|:---:|
 | <img src="docs/screenshots/login.jpg" width="230" alt="Login screen"> | <img src="docs/screenshots/dashboard.jpg" width="230" alt="Dashboard"> | <img src="docs/screenshots/transactions.jpg" width="230" alt="Transactions list"> |
-| **Budgets** | **Reports** | **Notifications** |
-| <img src="docs/screenshots/budgets.jpg" width="230" alt="Budgets with spending progress"> | <img src="docs/screenshots/reports.jpg" width="230" alt="Reports"> | <img src="docs/screenshots/notifications.jpg" width="230" alt="Notifications"> |
+| **Budgets** | **Reports** | **Push notifications** |
+| <img src="docs/screenshots/budgets.jpg" width="230" alt="Budgets with spending progress"> | <img src="docs/screenshots/reports.jpg" width="230" alt="Reports"> | <img src="docs/screenshots/notifications.jpg" width="230" alt="Push notifications in the notification shade"> |
 
 ## Features
 

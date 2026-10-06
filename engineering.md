@@ -535,3 +535,12 @@
 - **Correction (my check):** `F=$(grep -c "Push failed" /tmp/app.log)` ended an `&&` chain before the push trigger ran: `grep -c` prints 0 but exits 1 when nothing matches. Fixed with `|| true`.
 - **Bump:** before the screenshots the APK was older than 13 source files, so it was rebuilt; `./gradlew --stop` reported 7 daemons still running from earlier builds.
 - **Not verified:** how GitHub renders the grid (checked after the push), and that each image shows the screen its caption names (the images were not visible to me).
+
+## 2026-10-06 - Screenshots without the status bar (`docs/screenshot-crop`)
+
+- **Bug:** five README screenshots (1080x2378) showed the phone's status bar: time, battery, network and a personal app icon. `notifications.jpg` (1080x1464) had already been cropped and has none.
+- **Fix:** lossless crop of the top 128 px with `jpegtran -perfect -copy none -crop 1080x2250+0+128` (`libjpeg-turbo-progs`, installed in the Codespace with apt; no Python or ImageMagick there). The status bar fills about the top 110 px; 128 is a multiple of the 16 px block size of these 4:2:0 JPEGs, so `-perfect` can crop without re-encoding (it refuses otherwise). Each crop only runs while the height is still 2378, so a re-run cannot cut twice. A 128 px cut was previewed on the originals first: the app title bars stay intact.
+- **Fix:** `-copy none` also drops the EXIF metadata (a firmware build string; no location) from all six images.
+- **Fix:** the last caption said "Notifications", but the image is the notification shade with two "Quantro" pushes, not the in-app list; relabeled "Push notifications". The screenshot also confirms the push from the demo seed reached the phone.
+- **Observed (not fixed):** on the Transactions screen the bottom-nav label wraps ("Transactio" / "ns"); a UI fix for later.
+- **Verified:** `djpeg -verbose` reports height 2250 for the five cropped images (also checked in the commit chain) and 1464 for `notifications.jpg`; visual check in the Codespace; README checksum matches a dry run of the same `sed`.
