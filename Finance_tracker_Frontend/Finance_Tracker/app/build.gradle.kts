@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,6 +7,18 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
 }
+
+// Debug builds read the backend URL from local.properties (gitignored, so a Codespace address is
+// never committed), e.g. financeTracker.baseUrl=https://<codespace>-8080.app.github.dev/
+// Release builds keep the placeholder until deployment.
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+val placeholderBaseUrl = "https://api.yourdomain.com/"
+val debugBaseUrl = (localProperties.getProperty("financeTracker.baseUrl") ?: placeholderBaseUrl)
+    .trim()
+    .let { if (it.endsWith("/")) it else "$it/" } // Retrofit requires a trailing slash
 
 android {
     namespace = "com.example.finance_tracker"
@@ -20,7 +34,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "BASE_URL", "\"$debugBaseUrl\"")
+        }
         release {
+            buildConfigField("String", "BASE_URL", "\"$placeholderBaseUrl\"")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -40,6 +58,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     testOptions {
