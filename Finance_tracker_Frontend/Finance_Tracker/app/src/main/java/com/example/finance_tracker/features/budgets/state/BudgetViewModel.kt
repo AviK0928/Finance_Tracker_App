@@ -71,6 +71,7 @@ class BudgetViewModel @Inject constructor(
             }
             is BudgetEvent.HideForm -> resetForm()
             is BudgetEvent.ClearError -> _state.update { it.copy(errorMessage = null) }
+            is BudgetEvent.ClearFormError -> _state.update { it.copy(formError = null) }
             is BudgetEvent.ClearInfo -> _state.update { it.copy(infoMessage = null) }
             is BudgetEvent.PdfSaved -> _state.update {
                 it.copy(pendingPdf = null, infoMessage = if (event.saved) "PDF saved" else null)
@@ -123,19 +124,23 @@ class BudgetViewModel @Inject constructor(
         val amount = current.formAmount.toDoubleOrNull()
         val startDate = current.formStartDate.toLocalDateOrNull()
         val endDate = current.formEndDate.toLocalDateOrNull()
-        if (amount == null || amount <= 0.0 || current.formTitle.isBlank() || startDate == null || endDate == null) {
-            _state.update { it.copy(errorMessage = "Invalid input") }
-            return
+        // Say what is wrong; a plain "Invalid input" left the user guessing
+        val problem = when {
+            current.formTitle.isBlank() -> "Enter a title"
+            amount == null || amount <= 0.0 -> "Enter an amount greater than 0"
+            startDate == null || endDate == null -> "Choose start and end dates"
+            startDate != null && endDate != null && endDate.isBefore(startDate) -> "End date must be on or after start date"
+            else -> null
         }
-        if (endDate.isBefore(startDate)) {
-            _state.update { it.copy(errorMessage = "End date must be on or after start date") }
+        if (problem != null || amount == null || startDate == null || endDate == null) {
+            _state.update { it.copy(formError = problem) }
             return
         }
         // Category is optional on the backend: blank means the budget covers all expense categories
         val category = current.formCategory.ifBlank { null }
 
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
+            _state.update { it.copy(isLoading = true, formError = null) }
 
             val result = if (current.isEditing && current.selectedBudget != null) {
                 budgetRepo.updateBudget(
@@ -169,7 +174,8 @@ class BudgetViewModel @Inject constructor(
                     resetForm()
                     _state.update { it.copy(isLoading = false) }
                 }
-                is NetworkResult.Error -> _state.update { it.copy(errorMessage = result.message, isLoading = false) }
+                // Keep the dialog open with what was typed, and show the reason inside it
+                is NetworkResult.Error -> _state.update { it.copy(formError = result.message, isLoading = false) }
                 NetworkResult.Loading -> _state.update { it.copy(isLoading = true) }
             }
         }
@@ -214,6 +220,7 @@ class BudgetViewModel @Inject constructor(
                 formEndDate = "",
                 formFrequency = BudgetFrequency.MONTHLY,
                 formStatus = BudgetStatus.ACTIVE,
+                formError = null,
                 isFormVisible = false,
                 isEditing = false,
                 selectedBudget = null

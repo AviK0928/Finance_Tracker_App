@@ -120,6 +120,7 @@ dependencies {
     testImplementation(libs.androidx.test.core)
     // Compose UI tests on the JVM via Robolectric (ComponentActivity comes from ui-test-manifest below)
     testImplementation(libs.androidx.ui.test.junit4)
+    testImplementation(libs.androidx.navigation.testing)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

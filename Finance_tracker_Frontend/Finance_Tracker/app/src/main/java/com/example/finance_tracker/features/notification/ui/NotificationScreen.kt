@@ -24,36 +24,39 @@ import java.time.format.DateTimeFormatter
 fun NotificationScreen(viewModel: NotificationViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
 
+    // MainScaffold draws the only top bar; the notification actions sit in a row at the top instead
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            TopAppBar(
-                title = { Text("Notifications") },
-                actions = {
-                    if (state.selectedNotifications.isNotEmpty()) {
-                        IconButton(
-                            onClick = {
-                                viewModel.onEvent(NotificationEvent.DeleteBulk(state.selectedNotifications.toList()))
-                            }
-                        ) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete Selected")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (state.selectedNotifications.isNotEmpty()) {
+                    IconButton(
+                        onClick = {
+                            viewModel.onEvent(NotificationEvent.DeleteBulk(state.selectedNotifications.toList()))
                         }
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete Selected")
+                    }
 
-                        IconButton(
-                            onClick = {
-                                viewModel.onEvent(NotificationEvent.ArchiveBulk(state.selectedNotifications.toList()))
-                            }
-                        ) {
-                            Icon(Icons.Default.Unarchive, contentDescription = "Archive Selected")
+                    IconButton(
+                        onClick = {
+                            viewModel.onEvent(NotificationEvent.ArchiveBulk(state.selectedNotifications.toList()))
                         }
-                    } else {
-                        IconButton(
-                            onClick = { viewModel.onEvent(NotificationEvent.MarkAllAsRead) }
-                        ) {
-                            Icon(Icons.Default.Markunread, contentDescription = "Mark All Read")
-                        }
+                    ) {
+                        Icon(Icons.Default.Unarchive, contentDescription = "Archive Selected")
+                    }
+                } else {
+                    IconButton(
+                        onClick = { viewModel.onEvent(NotificationEvent.MarkAllAsRead) }
+                    ) {
+                        Icon(Icons.Default.Markunread, contentDescription = "Mark All Read")
                     }
                 }
-            )
+            }
         }
     ) { padding ->
         Column(

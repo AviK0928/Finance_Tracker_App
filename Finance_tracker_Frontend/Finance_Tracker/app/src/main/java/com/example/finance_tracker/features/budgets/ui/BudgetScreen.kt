@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -57,30 +58,24 @@ fun BudgetScreen(
         viewModel.onEvent(BudgetEvent.LoadBudgets)
     }
 
+    // MainScaffold draws the only top bar and already keeps this screen clear of the system bars
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = { Text("Budgets") },
-                actions = {
-                    IconButton(
-                        onClick = { viewModel.onEvent(BudgetEvent.ExportToPdf) },
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Download,
-                            contentDescription = "Export"
-                        )
-                    }
-                }
-            )
-        },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.onEvent(BudgetEvent.ShowForm) },
-                interactionSource = remember { MutableInteractionSource() }
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Budget")
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SmallFloatingActionButton(
+                    onClick = { viewModel.onEvent(BudgetEvent.ExportToPdf) },
+                    interactionSource = remember { MutableInteractionSource() }
+                ) {
+                    Icon(Icons.Default.Download, contentDescription = "Export PDF")
+                }
+                FloatingActionButton(
+                    onClick = { viewModel.onEvent(BudgetEvent.ShowForm) },
+                    interactionSource = remember { MutableInteractionSource() }
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Budget")
+                }
             }
         }
     ) { padding ->

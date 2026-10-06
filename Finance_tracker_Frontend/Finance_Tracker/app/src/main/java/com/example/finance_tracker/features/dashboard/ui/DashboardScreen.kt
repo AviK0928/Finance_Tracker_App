@@ -1,6 +1,8 @@
 package com.example.finance_tracker.features.dashboard.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -20,7 +22,7 @@ fun DashboardScreen(
         viewModel.onEvent(DashboardEvent.LoadDashboardData)
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         DashboardTabSelector(
             selectedView = state.currentView,
             onViewSelected = { viewModel.onEvent(DashboardEvent.ChangeView(it)) }

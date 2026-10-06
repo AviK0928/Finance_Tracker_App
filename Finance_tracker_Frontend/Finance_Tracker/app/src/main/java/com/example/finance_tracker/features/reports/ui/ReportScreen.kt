@@ -3,8 +3,6 @@ package com.example.finance_tracker.features.reports.ui
 import java.time.LocalDate
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -34,17 +32,9 @@ fun ReportsScreen(viewModel: ReportViewModel = hiltViewModel()) {
         loadThisMonth()
     }
 
+    // MainScaffold draws the only top bar and already keeps this screen clear of the system bars
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Reports") },
-                actions = {
-                    IconButton(onClick = { /* maybe export in future */ }) {
-                        Icon(Icons.Default.BarChart, contentDescription = "Reports")
-                    }
-                }
-            )
-        }
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         Column(
             modifier = Modifier

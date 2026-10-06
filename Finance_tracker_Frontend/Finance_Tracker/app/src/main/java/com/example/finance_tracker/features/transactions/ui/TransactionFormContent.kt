@@ -1,6 +1,8 @@
 package com.example.finance_tracker.features.transactions.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -9,13 +11,22 @@ import com.example.finance_tracker.core.ui.components.*
 import com.example.finance_tracker.features.transactions.state.TransactionEvent
 import com.example.finance_tracker.features.transactions.state.TransactionState
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Composable
 fun TransactionFormContent(
     state: TransactionState,
     onEvent: (TransactionEvent) -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
+    // formDate holds a full date-time; picking a day keeps the time of day (matters when editing)
+    val current = runCatching { LocalDateTime.parse(state.formDate) }.getOrNull() ?: LocalDateTime.now().withNano(0)
+
+    Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+        state.formError?.let { error ->
+            ErrorMessage(message = error, onDismiss = { onEvent(TransactionEvent.ClearFormError) })
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
         AmountInputField(
             value = state.formAmount,
             onValueChange = { onEvent(TransactionEvent.OnAmountChanged(it)) },
@@ -40,8 +51,8 @@ fun TransactionFormContent(
         Spacer(modifier = Modifier.height(8.dp))
 
         DatePickerField(
-            selectedDate = LocalDate.now(), // fallback to today if not parsed
-            onDateSelected = { onEvent(TransactionEvent.OnDateChanged(it.toString())) },
+            selectedDate = current.toLocalDate(),
+            onDateSelected = { day: LocalDate -> onEvent(TransactionEvent.OnDateChanged(day.atTime(current.toLocalTime()).toString())) },
             label = "Transaction Date"
         )
 

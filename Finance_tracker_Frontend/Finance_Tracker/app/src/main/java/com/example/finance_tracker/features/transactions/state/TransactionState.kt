@@ -36,6 +36,9 @@ data class TransactionState(
     // Showing the last synced copy because the server could not be reached
     val isOffline: Boolean = false,
 
+    // Validation or save error of the open form, shown inside the dialog (errorMessage is for the screen)
+    val formError: String? = null,
+
     val isEditing: Boolean = false,
     val isFormVisible: Boolean = false
 )

@@ -3,6 +3,7 @@ package com.example.finance_tracker.features.budgets.ui
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -47,7 +48,12 @@ fun BudgetFormContent(
     } catch (e: Exception) {
         LocalDate.now()
     }
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+        state.formError?.let { error ->
+            ErrorMessage(message = error, onDismiss = { onEvent(BudgetEvent.ClearFormError) })
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
         TextFieldWithLabels(
             label = "Title",
             value = state.formTitle,

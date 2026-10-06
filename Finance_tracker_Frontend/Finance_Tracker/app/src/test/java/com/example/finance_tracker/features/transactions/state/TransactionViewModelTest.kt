@@ -1,0 +1,117 @@
+package com.example.finance_tracker.features.transactions.state
+
+import com.example.finance_tracker.core.network.NetworkResult
+import com.example.finance_tracker.core.network.model.transaction.PaginatedTransactionResponse
+import com.example.finance_tracker.core.network.model.transaction.TransactionCreateDTO
+import com.example.finance_tracker.core.network.model.transaction.TransactionFilterDTO
+import com.example.finance_tracker.core.network.model.transaction.TransactionResponseDTO
+import com.example.finance_tracker.core.network.model.transaction.TransactionType
+import com.example.finance_tracker.core.network.model.transaction.TransactionUpdateDTO
+import com.example.finance_tracker.features.transactions.domain.TransactionRepo
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import java.time.LocalDate
+import java.time.LocalDateTime
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class TransactionViewModelTest {
+
+    /** Records creates; the list endpoints answer with an empty page. */
+    private class FakeTransactionRepo(var createResult: NetworkResult<TransactionResponseDTO>? = null) : TransactionRepo {
+        val created = mutableListOf<TransactionCreateDTO>()
+
+        override suspend fun createTransaction(dto: TransactionCreateDTO): NetworkResult<TransactionResponseDTO> {
+            created += dto
+            return createResult ?: NetworkResult.Success(
+                TransactionResponseDTO(1, 1, dto.amount, dto.category, dto.type, dto.transactionDate, dto.description,
+                    LocalDateTime.now(), LocalDateTime.now())
+            )
+        }
+        override suspend fun getFilteredTransactionsPaginated(
+            filter: TransactionFilterDTO, page: Int, size: Int, sort: List<String>
+        ) = NetworkResult.Success(PaginatedTransactionResponse(emptyList(), 0, 0, 0, size, true, true, true))
+        override suspend fun getCategories(): NetworkResult<List<String>> = NetworkResult.Success(emptyList())
+
+        override suspend fun getTransactionById(id: Long) = unused()
+        override suspend fun getAllTransactionsForUser() = unused()
+        override suspend fun getFilteredTransactions(
+            category: String?, type: TransactionType?, startDate: String?, endDate: String?,
+            minAmount: Double?, maxAmount: Double?
+        ) = unused()
+        override suspend fun updateTransaction(id: Long, dto: TransactionUpdateDTO) = unused()
+        override suspend fun deleteTransaction(id: Long) = unused()
+        override suspend fun getLocalTransactions(filter: TransactionFilterDTO) = unused()
+        override suspend fun exportFilteredTransactionsToPDF(filter: TransactionFilterDTO) = unused()
+        private fun unused(): Nothing = throw UnsupportedOperationException("not used in these tests")
+    }
+
+    @Before
+    fun setUp() {
+        // viewModelScope runs on Dispatchers.Main, which does not exist on the JVM
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    private fun fillIn(viewModel: TransactionViewModel) {
+        viewModel.onEvent(TransactionEvent.ShowForm)
+        viewModel.onEvent(TransactionEvent.OnAmountChanged("100"))
+        viewModel.onEvent(TransactionEvent.OnCategoryChanged("Food"))
+    }
+
+    @Test
+    fun newExpense_withoutTouchingTheDate_isCreatedForToday() {
+        val repo = FakeTransactionRepo()
+        val viewModel = TransactionViewModel(repo)
+
+        fillIn(viewModel)
+        viewModel.onEvent(TransactionEvent.SubmitForm)
+
+        assertEquals(1, repo.created.size)
+        assertEquals(LocalDate.now(), repo.created.single().transactionDate.toLocalDate())
+        assertFalse(viewModel.state.value.isFormVisible)
+        assertNull(viewModel.state.value.formError)
+    }
+
+    @Test
+    fun missingCategory_isNamed_insideTheForm_andNothingIsSent() {
+        val repo = FakeTransactionRepo()
+        val viewModel = TransactionViewModel(repo)
+
+        viewModel.onEvent(TransactionEvent.ShowForm)
+        viewModel.onEvent(TransactionEvent.OnAmountChanged("100"))
+        viewModel.onEvent(TransactionEvent.SubmitForm)
+
+        assertEquals("Choose a category", viewModel.state.value.formError)
+        assertNull(viewModel.state.value.errorMessage)
+        assertTrue(viewModel.state.value.isFormVisible)
+        assertTrue(repo.created.isEmpty())
+    }
+
+    @Test
+    fun serverError_staysInTheOpenForm() {
+        val repo = FakeTransactionRepo(createResult = NetworkResult.Error("Amount must have at most 2 decimal places", 400))
+        val viewModel = TransactionViewModel(repo)
+
+        fillIn(viewModel)
+        viewModel.onEvent(TransactionEvent.SubmitForm)
+
+        assertEquals("Amount must have at most 2 decimal places", viewModel.state.value.formError)
+        assertNull(viewModel.state.value.errorMessage)
+        assertTrue(viewModel.state.value.isFormVisible)
+        assertEquals("100", viewModel.state.value.formAmount)
+    }
+}

@@ -21,6 +21,7 @@ sealed class BudgetEvent {
     object ShowForm : BudgetEvent()
     object HideForm : BudgetEvent()
     object ClearError : BudgetEvent()
+    object ClearFormError : BudgetEvent()
 
     data class ApplyFilter(val status: BudgetStatus?, val frequency: BudgetFrequency?) : BudgetEvent()
     object ClearFilter : BudgetEvent()

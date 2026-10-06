@@ -50,6 +50,7 @@ private fun getTitleForRoute(route: String): String {
         com.example.finance_tracker.core.navigation.Route.BUDGETS -> "Budgets"
         com.example.finance_tracker.core.navigation.Route.REPORTS -> "Reports"
         com.example.finance_tracker.core.navigation.Route.SETTINGS -> "Settings"
+        com.example.finance_tracker.core.navigation.Route.NOTIFICATIONS -> "Notifications"
         else -> "Finance Tracker"
     }
 }

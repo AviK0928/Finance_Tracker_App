@@ -35,7 +35,10 @@ class TransactionViewModel @Inject constructor(
             is TransactionEvent.SubmitForm -> submitForm()
             is TransactionEvent.EditTransaction -> editTransaction(event.transactionId)
             is TransactionEvent.DeleteTransaction -> deleteTransaction(event.transactionId)
-            is TransactionEvent.ShowForm -> _state.update { it.copy(isFormVisible = true) }
+            is TransactionEvent.ShowForm -> _state.update {
+                // The date field shows today when empty; store it so submit sends what the user sees
+                it.copy(isFormVisible = true, formDate = it.formDate.ifBlank { LocalDateTime.now().withNano(0).toString() })
+            }
             is TransactionEvent.HideForm -> resetForm()
             is TransactionEvent.OnAmountChanged -> _state.update { it.copy(formAmount = event.amount) }
             is TransactionEvent.OnCategoryChanged -> _state.update { it.copy(formCategory = event.category) }
@@ -44,6 +47,7 @@ class TransactionViewModel @Inject constructor(
             is TransactionEvent.OnDescriptionChanged -> _state.update { it.copy(formDescription = event.desc) }
             is TransactionEvent.ExportToPDF -> exportToPDF()
             is TransactionEvent.ClearError -> _state.update { it.copy(errorMessage = null) }
+            is TransactionEvent.ClearFormError -> _state.update { it.copy(formError = null) }
             is TransactionEvent.PdfSaved -> _state.update {
                 it.copy(pendingPdf = null, infoMessage = if (event.saved) "PDF saved" else null)
             }
@@ -116,13 +120,20 @@ class TransactionViewModel @Inject constructor(
             LocalDateTime.parse(state.formDate, DateTimeFormatter.ISO_DATE_TIME)
         }.getOrNull()
 
-        if (amount == null || date == null || state.formCategory.isBlank()) {
-            _state.update { it.copy(errorMessage = "Invalid input") }
+        // Say what is wrong; a plain "Invalid input" left the user guessing
+        val problem = when {
+            amount == null || amount <= 0.0 -> "Enter an amount greater than 0"
+            state.formCategory.isBlank() -> "Choose a category"
+            date == null -> "Choose a date"
+            else -> null
+        }
+        if (problem != null || amount == null || date == null) {
+            _state.update { it.copy(formError = problem) }
             return
         }
 
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
+            _state.update { it.copy(isLoading = true, formError = null) }
 
             val result = if (state.isEditing && state.selectedTransaction != null) {
                 transactionRepo.updateTransaction(
@@ -152,7 +163,8 @@ class TransactionViewModel @Inject constructor(
                     resetForm()
                     loadTransactions(0)
                 }
-                is NetworkResult.Error -> _state.update { it.copy(errorMessage = result.message, isLoading = false) }
+                // Keep the dialog open with what was typed, and show the reason inside it
+                is NetworkResult.Error -> _state.update { it.copy(formError = result.message, isLoading = false) }
                 NetworkResult.Loading -> _state.update { it.copy(isLoading = true) }
             }
         }
@@ -193,6 +205,7 @@ class TransactionViewModel @Inject constructor(
                 formType = TransactionType.EXPENSE,
                 formDate = "",
                 formDescription = "",
+                formError = null,
                 isEditing = false,
                 isFormVisible = false,
                 selectedTransaction = null
