@@ -26,5 +26,4 @@ sealed class TransactionEvent {
     data class PdfSaved(val saved: Boolean) : TransactionEvent()
     object ClearInfo : TransactionEvent()
     object ClearError : TransactionEvent()
-    object ClearFormError : TransactionEvent()
 }

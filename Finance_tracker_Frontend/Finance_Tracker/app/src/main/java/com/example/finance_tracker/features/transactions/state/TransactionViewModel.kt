@@ -43,14 +43,14 @@ class TransactionViewModel @Inject constructor(
                 it.copy(isFormVisible = true, formDate = it.formDate.ifBlank { LocalDateTime.now().withNano(0).toString() })
             }
             is TransactionEvent.HideForm -> resetForm()
-            is TransactionEvent.OnAmountChanged -> _state.update { it.copy(formAmount = event.amount) }
-            is TransactionEvent.OnCategoryChanged -> _state.update { it.copy(formCategory = event.category) }
-            is TransactionEvent.OnTypeChanged -> _state.update { it.copy(formType = event.type) }
-            is TransactionEvent.OnDateChanged -> _state.update { it.copy(formDate = event.date) }
-            is TransactionEvent.OnDescriptionChanged -> _state.update { it.copy(formDescription = event.desc) }
+            // Editing any field clears the form error: the user is acting on it
+            is TransactionEvent.OnAmountChanged -> _state.update { it.copy(formAmount = event.amount, formError = null) }
+            is TransactionEvent.OnCategoryChanged -> _state.update { it.copy(formCategory = event.category, formError = null) }
+            is TransactionEvent.OnTypeChanged -> _state.update { it.copy(formType = event.type, formError = null) }
+            is TransactionEvent.OnDateChanged -> _state.update { it.copy(formDate = event.date, formError = null) }
+            is TransactionEvent.OnDescriptionChanged -> _state.update { it.copy(formDescription = event.desc, formError = null) }
             is TransactionEvent.ExportToPDF -> exportToPDF()
             is TransactionEvent.ClearError -> _state.update { it.copy(errorMessage = null) }
-            is TransactionEvent.ClearFormError -> _state.update { it.copy(formError = null) }
             is TransactionEvent.PdfSaved -> _state.update {
                 it.copy(pendingPdf = null, infoMessage = if (event.saved) "PDF saved" else null)
             }

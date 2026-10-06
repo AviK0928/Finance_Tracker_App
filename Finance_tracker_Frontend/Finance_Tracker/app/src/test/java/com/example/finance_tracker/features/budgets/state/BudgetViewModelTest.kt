@@ -132,6 +132,19 @@ class BudgetViewModelTest {
     }
 
     @Test
+    fun editingAField_clearsTheFormError() {
+        val viewModel = BudgetViewModel(FakeBudgetRepo(), FakeTransactionRepo())
+
+        fillIn(viewModel, amount = "500.125")
+        viewModel.onEvent(BudgetEvent.SubmitForm)
+        assertEquals("Amount must have at most 2 decimal places", viewModel.state.value.formError)
+
+        viewModel.onEvent(BudgetEvent.OnAmountChanged("500.12"))
+
+        assertNull(viewModel.state.value.formError)
+    }
+
+    @Test
     fun missingTitle_isNamed_insideTheForm() {
         val viewModel = BudgetViewModel(FakeBudgetRepo(), FakeTransactionRepo())
 

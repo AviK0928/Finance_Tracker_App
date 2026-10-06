@@ -135,6 +135,20 @@ class TransactionViewModelTest {
     }
 
     @Test
+    fun editingAField_clearsTheFormError() {
+        val viewModel = TransactionViewModel(FakeTransactionRepo())
+
+        viewModel.onEvent(TransactionEvent.ShowForm)
+        viewModel.onEvent(TransactionEvent.OnAmountChanged("100"))
+        viewModel.onEvent(TransactionEvent.SubmitForm)
+        assertEquals("Choose a category", viewModel.state.value.formError)
+
+        viewModel.onEvent(TransactionEvent.OnCategoryChanged("Food"))
+
+        assertNull(viewModel.state.value.formError)
+    }
+
+    @Test
     fun serverError_staysInTheOpenForm() {
         val repo = FakeTransactionRepo(createResult = NetworkResult.Error("Amount must have at most 2 decimal places", 400))
         val viewModel = TransactionViewModel(repo)

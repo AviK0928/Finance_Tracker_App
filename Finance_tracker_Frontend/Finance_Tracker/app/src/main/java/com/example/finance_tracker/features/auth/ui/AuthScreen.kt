@@ -30,10 +30,8 @@ fun AuthScreen(
 
     FormSection(title = if (state.isLoginMode) "Login" else "Register") {
         if (state.sessionExpired) {
-            ErrorMessage(
-                message = "Your session has expired. Please log in again.",
-                onDismiss = { viewModel.onEvent(AuthEvent.DismissSessionExpired) }
-            )
+            // Hidden again as soon as the user starts typing (AuthViewModel)
+            ErrorMessage(message = "Your session has expired. Please log in again.")
         }
 
         if (!state.isLoginMode) {
@@ -59,10 +57,7 @@ fun AuthScreen(
         )
 
         if (state.errorMessage != null) {
-            ErrorMessage(
-                message = state.errorMessage!!,
-                onDismiss = { viewModel.onEvent(AuthEvent.ClearError) }
-            )
+            ErrorMessage(message = state.errorMessage!!)
         }
 
         PrimaryButton(

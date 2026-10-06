@@ -17,6 +17,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -24,10 +25,11 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthViewModelTest {
 
-    /** Only the session-expired members are used; the network calls are not part of these tests. */
+    /** Session-expired members and login; the other network calls are not part of these tests. */
     private class FakeAuthRepo : AuthRepo {
         override val sessionExpired = MutableStateFlow(false)
         var dismissCalls = 0
+        var loginResult: NetworkResult<AuthResponseDTO>? = null
 
         override suspend fun dismissSessionExpired() {
             dismissCalls++
@@ -37,7 +39,7 @@ class AuthViewModelTest {
         override suspend fun register(request: RegisterRequestDTO): NetworkResult<AuthResponseDTO> =
             throw UnsupportedOperationException()
         override suspend fun login(request: LoginRequestDTO): NetworkResult<AuthResponseDTO> =
-            throw UnsupportedOperationException()
+            loginResult ?: throw UnsupportedOperationException()
         override suspend fun forgotPassword(request: ForgotPasswordRequestDTO): NetworkResult<MessageResponseDTO> =
             throw UnsupportedOperationException()
         override suspend fun resetPassword(request: ResetPasswordRequestDTO): NetworkResult<MessageResponseDTO> =
@@ -65,6 +67,30 @@ class AuthViewModelTest {
         repo.sessionExpired.value = true
 
         assertTrue(viewModel.state.value.sessionExpired)
+    }
+
+    @Test
+    fun typing_hidesTheLoginError() {
+        repo.loginResult = NetworkResult.Error("Invalid email or password", 401)
+        val viewModel = AuthViewModel(repo)
+
+        viewModel.onEvent(AuthEvent.Submit)
+        assertEquals("Invalid email or password", viewModel.state.value.errorMessage)
+
+        viewModel.onEvent(AuthEvent.OnPasswordChanged("Secret1!"))
+
+        assertNull(viewModel.state.value.errorMessage)
+    }
+
+    @Test
+    fun typing_hidesTheSessionExpiredNotice() {
+        repo.sessionExpired.value = true
+        val viewModel = AuthViewModel(repo)
+
+        viewModel.onEvent(AuthEvent.OnEmailChanged("a"))
+
+        assertEquals(1, repo.dismissCalls)
+        assertFalse(viewModel.state.value.sessionExpired)
     }
 
     @Test

@@ -15,7 +15,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.finance_tracker.core.network.model.settings.UpdateSettingDTO
-import com.example.finance_tracker.core.ui.components.ErrorMessage
+import com.example.finance_tracker.core.ui.components.ErrorSnackbarEffect
 import com.example.finance_tracker.core.ui.components.LoadingIndicator
 import com.example.finance_tracker.features.settings.state.SettingsEvent
 import com.example.finance_tracker.features.settings.state.SettingsViewModel
@@ -63,6 +63,8 @@ fun SettingsScreen(
         }
     }
 
+    ErrorSnackbarEffect(state.errorMessage, snackbarHostState) { viewModel.onEvent(SettingsEvent.ClearError) }
+
     LaunchedEffect(state.infoMessage) {
         state.infoMessage?.let {
             snackbarHostState.showSnackbar(it)
@@ -89,13 +91,6 @@ fun SettingsScreen(
             if (state.isLoading) {
                 LoadingIndicator()
                 return@Column
-            }
-
-            state.errorMessage?.let { error ->
-                ErrorMessage(
-                    message = error,
-                    onDismiss = { viewModel.onEvent(SettingsEvent.ClearError) }
-                )
             }
 
             Text("Preferences", style = MaterialTheme.typography.titleMedium)

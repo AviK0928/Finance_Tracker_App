@@ -8,7 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.finance_tracker.core.ui.components.ErrorMessage
+import com.example.finance_tracker.core.ui.components.ErrorSnackbarEffect
 import com.example.finance_tracker.core.ui.components.LoadingIndicator
 import com.example.finance_tracker.features.reports.state.*
 
@@ -32,9 +32,13 @@ fun ReportsScreen(viewModel: ReportViewModel = hiltViewModel()) {
         loadThisMonth()
     }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    ErrorSnackbarEffect(state.errorMessage, snackbarHostState) { viewModel.onEvent(ReportEvent.ClearError) }
+
     // MainScaffold draws the only top bar and already keeps this screen clear of the system bars
     Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -67,10 +71,6 @@ fun ReportsScreen(viewModel: ReportViewModel = hiltViewModel()) {
 
             when {
                 state.isLoading -> LoadingIndicator()
-                state.errorMessage != null -> ErrorMessage(
-                    message = state.errorMessage!!,
-                    onDismiss = { viewModel.onEvent(ReportEvent.ClearError) }
-                )
                 else -> when (selectedTab) {
                     ReportViewType.MONTHLY -> MonthlyReportSection(state)
                     ReportViewType.CATEGORY -> CategoryReportSection(state)

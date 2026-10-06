@@ -80,6 +80,27 @@ class DashboardViewModelTest {
     }
 
     @Test
+    fun failedFirstLoad_isMarked_untilALoadSucceeds_andALaterFailureKeepsTheNumbers() {
+        val repo = FakeDashboardRepo(remote = NetworkResult.Error("Server error", 500), local = null)
+        val viewModel = DashboardViewModel(repo)
+
+        viewModel.onEvent(DashboardEvent.LoadDashboardData)
+        assertTrue(viewModel.state.value.loadFailed)
+
+        repo.remote = NetworkResult.Success(dashboard(income = "700"))
+        viewModel.refresh()
+        assertFalse(viewModel.state.value.loadFailed)
+
+        repo.remote = NetworkResult.Error("Server error", 500)
+        viewModel.refresh()
+
+        // The error goes to the snackbar; the numbers already shown stay
+        assertEquals("Server error", viewModel.state.value.error)
+        assertFalse(viewModel.state.value.loadFailed)
+        assertEquals(0, BigDecimal("700").compareTo(viewModel.state.value.totalIncome))
+    }
+
+    @Test
     fun noResponse_andNothingSynced_showsTheError() {
         val repo = FakeDashboardRepo(
             remote = NetworkResult.Error("Network error: timeout", null, IOException("timeout")),

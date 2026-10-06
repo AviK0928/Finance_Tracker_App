@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.finance_tracker.core.ui.components.ErrorMessage
+import com.example.finance_tracker.core.ui.components.ErrorSnackbarEffect
 import com.example.finance_tracker.core.ui.components.LoadingIndicator
 import com.example.finance_tracker.core.ui.components.OfflineBanner
 import com.example.finance_tracker.core.ui.components.RefreshableBox
@@ -47,6 +47,8 @@ fun BudgetScreen(
             pdfLauncher.launch("budgets.pdf")
         }
     }
+
+    ErrorSnackbarEffect(state.errorMessage, snackbarHostState) { viewModel.onEvent(BudgetEvent.ClearError) }
 
     LaunchedEffect(state.infoMessage) {
         state.infoMessage?.let {
@@ -101,10 +103,6 @@ fun BudgetScreen(
             RefreshableBox(onRefresh = { viewModel.refresh().join() }, modifier = Modifier.fillMaxSize()) {
                 when {
                     state.isLoading -> LoadingIndicator()
-                    state.errorMessage != null -> ErrorMessage(
-                        message = state.errorMessage!!,
-                        onDismiss = { viewModel.onEvent(BudgetEvent.ClearError) }
-                    )
                     else -> BudgetList(
                         budgets = state.budgets,
                         onEdit = { viewModel.onEvent(BudgetEvent.EditBudget(it)) },

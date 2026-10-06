@@ -14,7 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.finance_tracker.core.ui.components.ErrorMessage
+import com.example.finance_tracker.core.ui.components.ErrorSnackbarEffect
 import com.example.finance_tracker.core.ui.components.LoadingIndicator
 import com.example.finance_tracker.features.notification.state.*
 import java.time.format.DateTimeFormatter
@@ -23,10 +23,14 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun NotificationScreen(viewModel: NotificationViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    ErrorSnackbarEffect(state.errorMessage, snackbarHostState) { viewModel.onEvent(NotificationEvent.ClearError) }
 
     // MainScaffold draws the only top bar; the notification actions sit in a row at the top instead
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -67,10 +71,6 @@ fun NotificationScreen(viewModel: NotificationViewModel = hiltViewModel()) {
         ) {
             when {
                 state.isLoading -> LoadingIndicator()
-                state.errorMessage != null -> ErrorMessage(
-                    message = state.errorMessage!!,
-                    onDismiss = { viewModel.onEvent(NotificationEvent.ClearError) }
-                )
                 else -> NotificationList(
                     notifications = state.notifications,
                     selectedIds = state.selectedNotifications,

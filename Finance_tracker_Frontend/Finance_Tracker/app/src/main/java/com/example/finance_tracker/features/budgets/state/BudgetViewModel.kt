@@ -31,13 +31,14 @@ class BudgetViewModel @Inject constructor(
     fun onEvent(event: BudgetEvent) {
         when (event) {
             is BudgetEvent.LoadBudgets -> loadBudgets()
-            is BudgetEvent.OnTitleChanged -> _state.update { it.copy(formTitle = event.title) }
-            is BudgetEvent.OnAmountChanged -> _state.update { it.copy(formAmount = event.amount) }
-            is BudgetEvent.OnCategoryChanged -> _state.update { it.copy(formCategory = event.category) }
-            is BudgetEvent.OnStartDateChanged -> _state.update { it.copy(formStartDate = event.date) }
-            is BudgetEvent.OnEndDateChanged -> _state.update { it.copy(formEndDate = event.date) }
-            is BudgetEvent.OnFrequencyChanged -> _state.update { it.copy(formFrequency = event.frequency) }
-            is BudgetEvent.OnStatusChanged -> _state.update { it.copy(formStatus = event.status) }
+            // Editing any field clears the form error: the user is acting on it
+            is BudgetEvent.OnTitleChanged -> _state.update { it.copy(formTitle = event.title, formError = null) }
+            is BudgetEvent.OnAmountChanged -> _state.update { it.copy(formAmount = event.amount, formError = null) }
+            is BudgetEvent.OnCategoryChanged -> _state.update { it.copy(formCategory = event.category, formError = null) }
+            is BudgetEvent.OnStartDateChanged -> _state.update { it.copy(formStartDate = event.date, formError = null) }
+            is BudgetEvent.OnEndDateChanged -> _state.update { it.copy(formEndDate = event.date, formError = null) }
+            is BudgetEvent.OnFrequencyChanged -> _state.update { it.copy(formFrequency = event.frequency, formError = null) }
+            is BudgetEvent.OnStatusChanged -> _state.update { it.copy(formStatus = event.status, formError = null) }
 
             is BudgetEvent.SubmitForm -> submitForm()
             is BudgetEvent.EditBudget -> enterEditMode(event.budgetId)
@@ -74,7 +75,6 @@ class BudgetViewModel @Inject constructor(
             }
             is BudgetEvent.HideForm -> resetForm()
             is BudgetEvent.ClearError -> _state.update { it.copy(errorMessage = null) }
-            is BudgetEvent.ClearFormError -> _state.update { it.copy(formError = null) }
             is BudgetEvent.ClearInfo -> _state.update { it.copy(infoMessage = null) }
             is BudgetEvent.PdfSaved -> _state.update {
                 it.copy(pendingPdf = null, infoMessage = if (event.saved) "PDF saved" else null)

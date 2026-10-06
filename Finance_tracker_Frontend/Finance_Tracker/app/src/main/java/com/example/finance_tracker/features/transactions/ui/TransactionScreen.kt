@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.finance_tracker.core.ui.components.ErrorMessage
+import com.example.finance_tracker.core.ui.components.ErrorSnackbarEffect
 import com.example.finance_tracker.core.ui.components.LoadingIndicator
 import com.example.finance_tracker.core.ui.components.OfflineBanner
 import com.example.finance_tracker.core.ui.components.RefreshableBox
@@ -51,6 +51,8 @@ fun TransactionsScreen(
         viewModel.onEvent(TransactionEvent.LoadInitial)
     }
 
+    ErrorSnackbarEffect(state.errorMessage, snackbarHostState) { viewModel.onEvent(TransactionEvent.ClearError) }
+
     LaunchedEffect(state.infoMessage) {
         state.infoMessage?.let {
             snackbarHostState.showSnackbar(it)
@@ -62,10 +64,6 @@ fun TransactionsScreen(
         RefreshableBox(onRefresh = { viewModel.refresh().join() }, modifier = Modifier.fillMaxSize()) {
             when {
                 state.isLoading -> LoadingIndicator()
-                state.errorMessage != null -> ErrorMessage(
-                    message = state.errorMessage ?: "Unknown error",
-                    onDismiss = { viewModel.onEvent(TransactionEvent.ClearError) }
-                )
                 else -> Column(modifier = Modifier.fillMaxSize()) {
                     if (state.isOffline) OfflineBanner()
                     TransactionList(

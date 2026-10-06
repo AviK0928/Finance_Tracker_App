@@ -50,7 +50,7 @@ fun BudgetFormContent(
     }
     Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
         state.formError?.let { error ->
-            ErrorMessage(message = error, onDismiss = { onEvent(BudgetEvent.ClearFormError) })
+            ErrorMessage(message = error)
             Spacer(modifier = Modifier.height(8.dp))
         }
 

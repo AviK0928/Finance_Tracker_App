@@ -35,10 +35,7 @@ fun ForgotPasswordScreen(
         )
 
         if (state.forgotResetMessage != null) {
-            ErrorMessage(
-                message = state.forgotResetMessage!!,
-                onDismiss = { viewModel.onEvent(AuthEvent.ClearError) }
-            )
+            ErrorMessage(message = state.forgotResetMessage!!)
         }
 
         PrimaryButton(

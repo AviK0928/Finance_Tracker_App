@@ -23,5 +23,9 @@ data class DashboardState(
     val isLoading: Boolean = false,
     // Showing numbers computed from the last synced copy because the server could not be reached
     val isOffline: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    // True once numbers (live or offline) have been shown; a failed refresh then keeps them on screen
+    val hasData: Boolean = false,
+    // The load failed before any numbers were shown: the screen says so instead of showing zeros
+    val loadFailed: Boolean = false
 )

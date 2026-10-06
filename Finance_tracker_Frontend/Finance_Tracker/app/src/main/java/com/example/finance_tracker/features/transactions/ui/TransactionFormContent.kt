@@ -23,7 +23,7 @@ fun TransactionFormContent(
 
     Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
         state.formError?.let { error ->
-            ErrorMessage(message = error, onDismiss = { onEvent(TransactionEvent.ClearFormError) })
+            ErrorMessage(message = error)
             Spacer(modifier = Modifier.height(8.dp))
         }
 

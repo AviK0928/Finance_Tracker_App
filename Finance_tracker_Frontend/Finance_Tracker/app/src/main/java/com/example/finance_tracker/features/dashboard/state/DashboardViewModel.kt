@@ -48,7 +48,7 @@ class DashboardViewModel @Inject constructor(
                     if (local != null) {
                         show(local, offline = true)
                     } else {
-                        _state.update { it.copy(error = result.message, isLoading = false) }
+                        _state.update { it.copy(error = result.message, isLoading = false, loadFailed = !it.hasData) }
                     }
                 }
 
@@ -67,7 +67,9 @@ class DashboardViewModel @Inject constructor(
                 recentTransactions = data.transactions.recentTransactions,
                 isOffline = offline,
                 isLoading = false,
-                error = null
+                error = null,
+                hasData = true,
+                loadFailed = false
             )
         }
     }
