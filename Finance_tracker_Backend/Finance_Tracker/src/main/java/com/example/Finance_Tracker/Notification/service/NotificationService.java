@@ -6,11 +6,13 @@ import com.example.Finance_Tracker.Security.SecurityUtils;
 import com.example.Finance_Tracker.Notification.dto.NotificationDTO;
 import com.example.Finance_Tracker.Notification.entity.Notification;
 import com.example.Finance_Tracker.Notification.mapper.NotificationMapper;
+import com.example.Finance_Tracker.Notification.push.NotificationCreatedEvent;
 import com.example.Finance_Tracker.Notification.repository.NotificationRepository;
 import com.example.Finance_Tracker.Notification.util.NotificationType;
 import com.example.Finance_Tracker.Settings.service.UserSettingService;
 import com.example.Finance_Tracker.Settings.util.SettingKey;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +28,8 @@ public class NotificationService {
     private NotificationRepository notificationRepository;
     @Autowired
     private UserSettingService userSettingService;
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     public List<NotificationDTO> getNotificationsByUser() {
         Long userId = SecurityUtils.getCurrentUserId();
@@ -146,7 +150,10 @@ public class NotificationService {
                 .referenceId(dto.getReferenceId())
                 .archived(false)
                 .build();
-        return notificationRepository.save(notification);
+        Notification saved = notificationRepository.save(notification);
+        // Push to the user's devices after commit (PushNotificationService); muted notifications never get here
+        eventPublisher.publishEvent(new NotificationCreatedEvent(userId));
+        return saved;
     }
 
     private boolean isWanted(Long userId, SettingKey preference) {

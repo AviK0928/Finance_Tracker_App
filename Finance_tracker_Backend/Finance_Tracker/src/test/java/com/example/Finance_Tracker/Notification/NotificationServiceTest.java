@@ -4,6 +4,7 @@ import com.example.Finance_Tracker.Core.exception.ResourceNotFoundException;
 import com.example.Finance_Tracker.Notification.dto.CreateNotificationDTO;
 import com.example.Finance_Tracker.Notification.dto.NotificationDTO;
 import com.example.Finance_Tracker.Notification.entity.Notification;
+import com.example.Finance_Tracker.Notification.push.NotificationCreatedEvent;
 import com.example.Finance_Tracker.Notification.repository.NotificationRepository;
 import com.example.Finance_Tracker.Notification.service.NotificationService;
 import com.example.Finance_Tracker.Notification.util.NotificationType;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -40,6 +42,7 @@ class NotificationServiceTest {
 
     @Mock private NotificationRepository notificationRepository;
     @Mock private UserSettingService userSettingService;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks private NotificationService notificationService;
 
@@ -146,6 +149,7 @@ class NotificationServiceTest {
 
         assertThat(saved).isNotNull();
         assertThat(saved.getUserId()).isEqualTo(OTHER_USER_ID);
+        verify(eventPublisher).publishEvent(new NotificationCreatedEvent(OTHER_USER_ID));
     }
 
     @Test
@@ -158,6 +162,7 @@ class NotificationServiceTest {
 
         assertThat(saved).isNull();
         verify(notificationRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     @Test
@@ -168,6 +173,7 @@ class NotificationServiceTest {
 
         assertThat(saved).isNull();
         verify(notificationRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     private static CreateNotificationDTO dto(SettingKey preference) {

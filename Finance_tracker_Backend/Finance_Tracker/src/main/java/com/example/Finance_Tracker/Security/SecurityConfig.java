@@ -53,6 +53,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/notifications", "/api/notifications/**").authenticated()
                         .requestMatchers("/api/budgets", "/api/budgets/**").authenticated()
                         .requestMatchers("/api/settings/**").authenticated()
+                        .requestMatchers("/api/devices", "/api/devices/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
