@@ -404,3 +404,9 @@
 - **Paste method (no base64):** each paste only writes a patch file with `cat > /tmp/x.patch <<'EOF'`; a separate command runs `git apply --check` on all of them before applying. A mangled paste fails the check and nothing is applied. Log entries are plain ASCII (hyphen instead of em dash in headings) so they need no encoding.
 - **Testing:** `OfflineDataTest` (every filter bound inclusive and newest first; exact category; no filter returns all; dashboard totals without drift, ACTIVE budgets only, newest five by creation). `DashboardViewModelTest` (no response: local numbers, offline; 500: error, local copy not read; no response and nothing synced: error). The transaction and budget ViewModels use the same pattern but are only compile-checked (their repository interfaces are large to fake).
 - **Verified:** Android 46/46 and `assembleDebug`; `OfflineData` and `OfflineBannerKt` in the APK dex. On-device behaviour is checked in 9d-3.
+
+## 2026-10-06 - Transactions screen never loaded (`feat/android-debug-base-url`, commit 1 of 2)
+
+- **Bug (found while preparing the phone test, confirmed from the code):** nothing sent `TransactionEvent.LoadInitial`. Budgets and dashboard load in a `LaunchedEffect(Unit)`, `TransactionsScreen` had none and `TransactionViewModel` has no `init` block, so the list stayed empty until a filter or a form action happened to load it.
+- **Fix:** the same `LaunchedEffect(Unit) { viewModel.onEvent(TransactionEvent.LoadInitial) }` in `TransactionsScreen`.
+- **Testing:** a one-line UI trigger; no unit test (screens are not JVM-tested here). Verified by build (Android 46/46); on-device check is part of the phone test after the UI units, because layout problems (the add button hidden behind the bottom bar) blocked it.

@@ -44,6 +44,12 @@ fun TransactionsScreen(
         }
     }
 
+    // First page and category suggestions. Nothing sent LoadInitial before, so the list stayed empty
+    // until a filter or form action happened to load it (budgets and dashboard load the same way).
+    LaunchedEffect(Unit) {
+        viewModel.onEvent(TransactionEvent.LoadInitial)
+    }
+
     LaunchedEffect(state.infoMessage) {
         state.infoMessage?.let {
             snackbarHostState.showSnackbar(it)
