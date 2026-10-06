@@ -2,11 +2,16 @@
 # Mirrors the Codespace setup (.devcontainer/post-create.sh and docker-compose.yml).
 name: CI
 
+# Runs once per change on main. Feature branches are not built on push (our flow pushes the
+# same commit to the branch and to main, which ran CI twice); to check a branch before merging,
+# use "Run workflow" in the Actions tab and pick the branch.
 on:
   push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
 
-# A newer push to the same branch cancels the older run
+# A newer run for the same ref cancels the older one
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
