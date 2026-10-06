@@ -10,6 +10,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import java.time.LocalDateTime
@@ -55,9 +56,15 @@ class TransactionViewModel @Inject constructor(
         }
     }
 
-    private fun loadTransactions(page: Int) {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
+    /**
+     * Pull to refresh: reloads the first page while the current list stays on screen.
+     * The screen waits for the returned job, so the indicator stops exactly when the load ends.
+     */
+    fun refresh(): Job = loadTransactions(0, showLoading = false)
+
+    private fun loadTransactions(page: Int, showLoading: Boolean = true): Job {
+        return viewModelScope.launch {
+            if (showLoading) _state.update { it.copy(isLoading = true) }
 
             val result = transactionRepo.getFilteredTransactionsPaginated(
                 filter = _state.value.filter,

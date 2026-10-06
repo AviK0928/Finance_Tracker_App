@@ -29,6 +29,8 @@ class TransactionViewModelTest {
     /** Records creates; the list endpoints answer with an empty page. */
     private class FakeTransactionRepo(var createResult: NetworkResult<TransactionResponseDTO>? = null) : TransactionRepo {
         val created = mutableListOf<TransactionCreateDTO>()
+        val requestedPages = mutableListOf<Int>()
+        var onListCall: () -> Unit = {}
 
         override suspend fun createTransaction(dto: TransactionCreateDTO): NetworkResult<TransactionResponseDTO> {
             created += dto
@@ -39,7 +41,11 @@ class TransactionViewModelTest {
         }
         override suspend fun getFilteredTransactionsPaginated(
             filter: TransactionFilterDTO, page: Int, size: Int, sort: List<String>
-        ) = NetworkResult.Success(PaginatedTransactionResponse(emptyList(), 0, 0, 0, size, true, true, true))
+        ): NetworkResult<PaginatedTransactionResponse> {
+            requestedPages += page
+            onListCall()
+            return NetworkResult.Success(PaginatedTransactionResponse(emptyList(), 0, 0, 0, size, true, true, true))
+        }
         override suspend fun getCategories(): NetworkResult<List<String>> = NetworkResult.Success(emptyList())
 
         override suspend fun getTransactionById(id: Long) = unused()
@@ -113,5 +119,20 @@ class TransactionViewModelTest {
         assertNull(viewModel.state.value.errorMessage)
         assertTrue(viewModel.state.value.isFormVisible)
         assertEquals("100", viewModel.state.value.formAmount)
+    }
+
+    @Test
+    fun refresh_reloadsTheFirstPage_withoutTheFullScreenSpinner() {
+        val repo = FakeTransactionRepo()
+        val viewModel = TransactionViewModel(repo)
+        var loadingDuringRefresh: Boolean? = null
+        repo.onListCall = { loadingDuringRefresh = viewModel.state.value.isLoading }
+
+        val job = viewModel.refresh()
+
+        assertTrue(job.isCompleted)
+        assertEquals(listOf(0), repo.requestedPages)
+        assertEquals(false, loadingDuringRefresh)
+        assertFalse(viewModel.state.value.isLoading)
     }
 }

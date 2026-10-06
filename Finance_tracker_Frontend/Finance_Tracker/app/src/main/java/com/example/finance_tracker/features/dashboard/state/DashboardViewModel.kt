@@ -6,6 +6,7 @@ import com.example.finance_tracker.core.network.NetworkResult
 import com.example.finance_tracker.features.dashboard.domain.DashboardRepo
 import com.example.finance_tracker.core.network.model.dashboard.DashboardResponseDTO
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -28,9 +29,15 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    private fun loadDashboardData() {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
+    /**
+     * Pull to refresh: reloads while the current numbers stay on screen (no full-screen spinner).
+     * The screen waits for the returned job, so the indicator stops exactly when the load ends.
+     */
+    fun refresh(): Job = loadDashboardData(showLoading = false)
+
+    private fun loadDashboardData(showLoading: Boolean = true): Job {
+        return viewModelScope.launch {
+            if (showLoading) _state.update { it.copy(isLoading = true) }
 
             when (val result = dashboardRepo.getDashboardData()) {
                 is NetworkResult.Success -> show(result.data, offline = false)

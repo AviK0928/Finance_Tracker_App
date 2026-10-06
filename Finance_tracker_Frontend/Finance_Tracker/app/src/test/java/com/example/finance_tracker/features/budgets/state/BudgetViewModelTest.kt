@@ -20,6 +20,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -30,11 +31,17 @@ class BudgetViewModelTest {
 
     private class FakeBudgetRepo : BudgetRepo {
         val created = mutableListOf<BudgetCreateDTO>()
+        var listCalls = 0
+        var onListCall: () -> Unit = {}
         override suspend fun createBudget(dto: BudgetCreateDTO): NetworkResult<BudgetResponseDTO> {
             created += dto
             return NetworkResult.Error("not needed", 500)
         }
-        override suspend fun getBudgetsByUser(): NetworkResult<List<BudgetResponseDTO>> = NetworkResult.Success(emptyList())
+        override suspend fun getBudgetsByUser(): NetworkResult<List<BudgetResponseDTO>> {
+            listCalls++
+            onListCall()
+            return NetworkResult.Success(emptyList())
+        }
         override suspend fun updateBudget(id: Long, dto: BudgetUpdateDTO) = unused()
         override suspend fun deleteBudget(id: Long) = unused()
         override suspend fun getBudgetById(id: Long) = unused()
@@ -101,5 +108,20 @@ class BudgetViewModelTest {
 
         assertEquals("Enter a title", viewModel.state.value.formError)
         assertNull(viewModel.state.value.errorMessage)
+    }
+
+    @Test
+    fun refresh_reloadsTheBudgets_withoutTheFullScreenSpinner() {
+        val repo = FakeBudgetRepo()
+        val viewModel = BudgetViewModel(repo, FakeTransactionRepo())
+        var loadingDuringRefresh: Boolean? = null
+        repo.onListCall = { loadingDuringRefresh = viewModel.state.value.isLoading }
+
+        val job = viewModel.refresh()
+
+        assertTrue(job.isCompleted)
+        assertEquals(1, repo.listCalls)
+        assertEquals(false, loadingDuringRefresh)
+        assertFalse(viewModel.state.value.isLoading)
     }
 }

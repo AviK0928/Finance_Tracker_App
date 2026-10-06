@@ -11,6 +11,7 @@ import com.example.finance_tracker.features.dashboard.state.*
 import com.example.finance_tracker.core.ui.components.ErrorMessage
 import com.example.finance_tracker.core.ui.components.LoadingIndicator
 import com.example.finance_tracker.core.ui.components.OfflineBanner
+import com.example.finance_tracker.core.ui.components.RefreshableBox
 
 @Composable
 fun DashboardScreen(
@@ -22,26 +23,28 @@ fun DashboardScreen(
         viewModel.onEvent(DashboardEvent.LoadDashboardData)
     }
 
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-        DashboardTabSelector(
-            selectedView = state.currentView,
-            onViewSelected = { viewModel.onEvent(DashboardEvent.ChangeView(it)) }
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (state.isOffline) OfflineBanner()
-
-        when {
-            state.isLoading -> LoadingIndicator()
-            state.error != null -> ErrorMessage(
-                message = state.error!!,
-                onDismiss = { viewModel.onEvent(DashboardEvent.ClearError) }
+    RefreshableBox(onRefresh = { viewModel.refresh().join() }, modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+            DashboardTabSelector(
+                selectedView = state.currentView,
+                onViewSelected = { viewModel.onEvent(DashboardEvent.ChangeView(it)) }
             )
-            else -> when (state.currentView) {
-                DashboardView.SUMMARY -> DashboardSummaryView(state)
-                DashboardView.BUDGET -> DashboardBudgetView(state)
-                DashboardView.TRANSACTIONS -> DashboardTransactionView(state)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (state.isOffline) OfflineBanner()
+
+            when {
+                state.isLoading -> LoadingIndicator()
+                state.error != null -> ErrorMessage(
+                    message = state.error!!,
+                    onDismiss = { viewModel.onEvent(DashboardEvent.ClearError) }
+                )
+                else -> when (state.currentView) {
+                    DashboardView.SUMMARY -> DashboardSummaryView(state)
+                    DashboardView.BUDGET -> DashboardBudgetView(state)
+                    DashboardView.TRANSACTIONS -> DashboardTransactionView(state)
+                }
             }
         }
     }

@@ -25,11 +25,15 @@ import java.math.BigDecimal
 class DashboardViewModelTest {
 
     private class FakeDashboardRepo(
-        private val remote: NetworkResult<DashboardResponseDTO>,
+        var remote: NetworkResult<DashboardResponseDTO>,
         private val local: DashboardResponseDTO?
     ) : DashboardRepo {
         var localCalls = 0
-        override suspend fun getDashboardData() = remote
+        var onRemoteCall: () -> Unit = {}
+        override suspend fun getDashboardData(): NetworkResult<DashboardResponseDTO> {
+            onRemoteCall()
+            return remote
+        }
         override suspend fun getLocalDashboard(): DashboardResponseDTO? {
             localCalls++
             return local
@@ -87,6 +91,27 @@ class DashboardViewModelTest {
 
         assertEquals("Network error: timeout", viewModel.state.value.error)
         assertFalse(viewModel.state.value.isOffline)
+    }
+
+    @Test
+    fun refresh_backOnline_replacesTheOfflineCopy_withoutTheFullScreenSpinner() {
+        val repo = FakeDashboardRepo(
+            remote = NetworkResult.Error("Network error: timeout", null, IOException("timeout")),
+            local = dashboard(income = "500")
+        )
+        val viewModel = DashboardViewModel(repo)
+        viewModel.onEvent(DashboardEvent.LoadDashboardData)
+        assertTrue(viewModel.state.value.isOffline)
+
+        repo.remote = NetworkResult.Success(dashboard(income = "700"))
+        var loadingDuringRefresh: Boolean? = null
+        repo.onRemoteCall = { loadingDuringRefresh = viewModel.state.value.isLoading }
+        val job = viewModel.refresh()
+
+        assertTrue(job.isCompleted)
+        assertEquals(false, loadingDuringRefresh)
+        assertFalse(viewModel.state.value.isOffline)
+        assertEquals(0, BigDecimal("700").compareTo(viewModel.state.value.totalIncome))
     }
 
     private fun dashboard(income: String) = DashboardResponseDTO(

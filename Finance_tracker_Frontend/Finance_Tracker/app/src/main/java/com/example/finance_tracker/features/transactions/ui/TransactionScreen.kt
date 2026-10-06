@@ -16,6 +16,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.finance_tracker.core.ui.components.ErrorMessage
 import com.example.finance_tracker.core.ui.components.LoadingIndicator
 import com.example.finance_tracker.core.ui.components.OfflineBanner
+import com.example.finance_tracker.core.ui.components.RefreshableBox
 import com.example.finance_tracker.features.transactions.state.TransactionEvent
 import com.example.finance_tracker.features.transactions.state.TransactionViewModel
 
@@ -58,20 +59,22 @@ fun TransactionsScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        when {
-            state.isLoading -> LoadingIndicator()
-            state.errorMessage != null -> ErrorMessage(
-                message = state.errorMessage ?: "Unknown error",
-                onDismiss = { viewModel.onEvent(TransactionEvent.ClearError) }
-            )
-            else -> Column(modifier = Modifier.fillMaxSize()) {
-                if (state.isOffline) OfflineBanner()
-                TransactionList(
-                    state = state,
-                    onLoadNext = { viewModel.onEvent(TransactionEvent.LoadNextPage) },
-                    onEdit = { viewModel.onEvent(TransactionEvent.EditTransaction(it)) },
-                    onDelete = { viewModel.onEvent(TransactionEvent.DeleteTransaction(it)) }
+        RefreshableBox(onRefresh = { viewModel.refresh().join() }, modifier = Modifier.fillMaxSize()) {
+            when {
+                state.isLoading -> LoadingIndicator()
+                state.errorMessage != null -> ErrorMessage(
+                    message = state.errorMessage ?: "Unknown error",
+                    onDismiss = { viewModel.onEvent(TransactionEvent.ClearError) }
                 )
+                else -> Column(modifier = Modifier.fillMaxSize()) {
+                    if (state.isOffline) OfflineBanner()
+                    TransactionList(
+                        state = state,
+                        onLoadNext = { viewModel.onEvent(TransactionEvent.LoadNextPage) },
+                        onEdit = { viewModel.onEvent(TransactionEvent.EditTransaction(it)) },
+                        onDelete = { viewModel.onEvent(TransactionEvent.DeleteTransaction(it)) }
+                    )
+                }
             }
         }
 

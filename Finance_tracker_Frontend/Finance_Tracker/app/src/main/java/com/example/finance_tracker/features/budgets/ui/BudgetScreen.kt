@@ -19,6 +19,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.finance_tracker.core.ui.components.ErrorMessage
 import com.example.finance_tracker.core.ui.components.LoadingIndicator
 import com.example.finance_tracker.core.ui.components.OfflineBanner
+import com.example.finance_tracker.core.ui.components.RefreshableBox
 import com.example.finance_tracker.features.budgets.state.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -97,17 +98,19 @@ fun BudgetScreen(
 
             if (state.isOffline) OfflineBanner()
 
-            when {
-                state.isLoading -> LoadingIndicator()
-                state.errorMessage != null -> ErrorMessage(
-                    message = state.errorMessage!!,
-                    onDismiss = { viewModel.onEvent(BudgetEvent.ClearError) }
-                )
-                else -> BudgetList(
-                    budgets = state.budgets,
-                    onEdit = { viewModel.onEvent(BudgetEvent.EditBudget(it)) },
-                    onDelete = { viewModel.onEvent(BudgetEvent.DeleteBudget(it)) }
-                )
+            RefreshableBox(onRefresh = { viewModel.refresh().join() }, modifier = Modifier.fillMaxSize()) {
+                when {
+                    state.isLoading -> LoadingIndicator()
+                    state.errorMessage != null -> ErrorMessage(
+                        message = state.errorMessage!!,
+                        onDismiss = { viewModel.onEvent(BudgetEvent.ClearError) }
+                    )
+                    else -> BudgetList(
+                        budgets = state.budgets,
+                        onEdit = { viewModel.onEvent(BudgetEvent.EditBudget(it)) },
+                        onDelete = { viewModel.onEvent(BudgetEvent.DeleteBudget(it)) }
+                    )
+                }
             }
         }
     }

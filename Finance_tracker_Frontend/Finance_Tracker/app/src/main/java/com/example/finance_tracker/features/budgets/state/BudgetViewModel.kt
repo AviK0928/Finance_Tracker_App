@@ -8,6 +8,7 @@ import com.example.finance_tracker.core.network.model.budget.*
 import com.example.finance_tracker.features.budgets.domain.BudgetRepo
 import com.example.finance_tracker.features.transactions.domain.TransactionRepo
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -79,10 +80,16 @@ class BudgetViewModel @Inject constructor(
         }
     }
 
-    private fun loadBudgets() {
+    /**
+     * Pull to refresh: reloads while the current list stays on screen.
+     * The screen waits for the returned job, so the indicator stops exactly when the load ends.
+     */
+    fun refresh(): Job = loadBudgets(showLoading = false)
+
+    private fun loadBudgets(showLoading: Boolean = true): Job {
         loadCategories()
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
+        return viewModelScope.launch {
+            if (showLoading) _state.update { it.copy(isLoading = true) }
 
             when (val result = budgetRepo.getBudgetsByUser()) {
                 is NetworkResult.Success -> {
